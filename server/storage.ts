@@ -5,13 +5,20 @@ import {
   type User,
   type InsertUser,
   type Round,
-  type InsertRound,
   type Pick,
-  type InsertPick,
   type Player,
   type RoundState,
-  type UserPick
+  type UserPick,
+  insertRoundSchema,
+  insertPickSchema
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, and } from "drizzle-orm";
+import { z } from "zod";
+
+// Export these types based on the schemas in shared/schema.ts
+export type InsertRound = z.infer<typeof insertRoundSchema>;
+export type InsertPick = z.infer<typeof insertPickSchema>;
 
 // Storage interface with all the methods we need
 export interface IStorage {
@@ -38,140 +45,158 @@ export interface IStorage {
   getLeaderboard(): Promise<Player[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private rounds: Map<number, Round>;
-  private picks: Map<number, Pick>;
-  private userMap: Map<string, number>; // Map username to id for quick lookup
-  private currentId: { user: number; round: number; pick: number };
-
-  constructor() {
-    this.users = new Map();
-    this.rounds = new Map();
-    this.picks = new Map();
-    this.userMap = new Map();
-    this.currentId = { user: 1, round: 1, pick: 1 };
-  }
-
+export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const userId = this.userMap.get(username);
-    if (userId) {
-      return this.users.get(userId);
-    }
-    return undefined;
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId.user++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    this.userMap.set(user.username, id);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
 
   // Round methods
   async getRound(id: number): Promise<Round | undefined> {
-    return this.rounds.get(id);
+    const [round] = await db.select().from(rounds).where(eq(rounds.id, id));
+    return round;
   }
 
   async getCurrentRound(): Promise<Round | undefined> {
-    // Get the latest round
-    if (this.rounds.size === 0) return undefined;
+    // Get all rounds and find the active one
+    const allRounds = await db
+      .select()
+      .from(rounds)
+      .orderBy(desc(rounds.id))
+      .limit(1);
     
-    const roundsArray = Array.from(this.rounds.values());
-    roundsArray.sort((a, b) => b.id - a.id);
-    
-    return roundsArray[0];
+    // Find the most recent round where endTime is null
+    return allRounds.find(round => round.endTime === null);
   }
 
   async createRound(insertRound: InsertRound): Promise<Round> {
-    const id = this.currentId.round++;
-    const round: Round = { ...insertRound, id };
-    this.rounds.set(id, round);
+    const [round] = await db
+      .insert(rounds)
+      .values(insertRound)
+      .returning();
+    
     return round;
   }
 
   async updateRound(id: number, roundUpdate: Partial<Round>): Promise<Round | undefined> {
-    const round = this.rounds.get(id);
-    if (!round) return undefined;
-    
-    const updatedRound = { ...round, ...roundUpdate };
-    this.rounds.set(id, updatedRound);
+    const [updatedRound] = await db
+      .update(rounds)
+      .set(roundUpdate)
+      .where(eq(rounds.id, id))
+      .returning();
     
     return updatedRound;
   }
 
   async getRoundHistory(limit: number): Promise<Round[]> {
-    const roundsArray = Array.from(this.rounds.values());
-    roundsArray.sort((a, b) => b.id - a.id);
+    // Get completed rounds (with endTime not null)
+    const allRounds = await db
+      .select()
+      .from(rounds)
+      .orderBy(desc(rounds.id))
+      .limit(limit);
     
-    return roundsArray.slice(0, limit);
+    // Filter out rounds where endTime is null
+    return allRounds.filter(round => round.endTime !== null);
   }
 
   // Pick methods
   async createPick(insertPick: InsertPick): Promise<Pick> {
-    const id = this.currentId.pick++;
-    const pick: Pick = { ...insertPick, id };
-    this.picks.set(id, pick);
+    const [pick] = await db
+      .insert(picks)
+      .values(insertPick)
+      .returning();
+    
     return pick;
   }
 
   async getPicksByRound(roundId: number): Promise<Pick[]> {
-    return Array.from(this.picks.values()).filter(pick => pick.roundId === roundId);
+    return await db
+      .select()
+      .from(picks)
+      .where(eq(picks.roundId, roundId));
   }
 
   async getUserPickForRound(userId: number, roundId: number): Promise<Pick | undefined> {
-    return Array.from(this.picks.values()).find(
-      pick => pick.userId === userId && pick.roundId === roundId
-    );
+    const [pick] = await db
+      .select()
+      .from(picks)
+      .where(
+        and(
+          eq(picks.userId, userId),
+          eq(picks.roundId, roundId)
+        )
+      );
+    
+    return pick;
   }
 
   // Game state methods
   async getPlayerStats(userId: number): Promise<{ wins: number; roundsPlayed: number }> {
-    const userPicks = Array.from(this.picks.values()).filter(pick => pick.userId === userId);
+    // Count rounds played by the user
+    const userPicks = await db
+      .select()
+      .from(picks)
+      .where(eq(picks.userId, userId));
+    
+    // Count rounds won by the user
+    const userWins = await db
+      .select()
+      .from(rounds)
+      .where(eq(rounds.winnerUserId, userId));
+    
+    // Count unique rounds to get the actual rounds played
     const uniqueRounds = new Set(userPicks.map(pick => pick.roundId));
     
-    const wins = Array.from(this.rounds.values()).filter(
-      round => round.winnerUserId === userId
-    ).length;
-    
-    return {
-      wins,
-      roundsPlayed: uniqueRounds.size
+    return { 
+      wins: userWins.length, 
+      roundsPlayed: uniqueRounds.size 
     };
   }
 
   async getLeaderboard(): Promise<Player[]> {
-    const users = await this.getAllUsers();
-    const players: Player[] = [];
+    // Get all users
+    const usersList = await this.getAllUsers();
     
-    for (const user of users) {
-      const stats = await this.getPlayerStats(user.id);
-      
-      players.push({
-        id: user.id,
-        username: user.username,
-        wins: stats.wins,
-        roundsPlayed: stats.roundsPlayed,
-        connected: true, // This will be updated by the game manager
-        participating: false // This will be updated by the game manager
-      });
-    }
+    // Get stats for each user and create the leaderboard
+    const leaderboard = await Promise.all(
+      usersList.map(async (user) => {
+        const stats = await this.getPlayerStats(user.id);
+        
+        return {
+          id: user.id,
+          username: user.username,
+          wins: stats.wins,
+          roundsPlayed: stats.roundsPlayed,
+          connected: true, // Will be updated by GameManager
+          participating: false // Will be updated by GameManager
+        };
+      })
+    );
     
-    // Sort by wins (descending)
-    players.sort((a, b) => b.wins - a.wins);
+    // Sort by wins descending
+    leaderboard.sort((a, b) => b.wins - a.wins);
     
-    return players;
+    return leaderboard;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
