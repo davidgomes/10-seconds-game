@@ -23,12 +23,15 @@ export function GameHistory() {
     }
   };
   
+  // Filter out rounds without any players
+  const roundsWithPlayers = gameState.roundHistory.filter(round => round.picks.length > 0);
+  
   return (
     <div className="p-6">
       <h3 className="text-xl font-bold mb-4">Recent Rounds</h3>
       
       <div className="space-y-4">
-        {gameState.roundHistory.map(round => (
+        {roundsWithPlayers.map(round => (
           <div key={round.id} className="border border-gray-200 rounded-lg overflow-hidden">
             <div className="bg-gray-50 px-4 py-2 flex justify-between items-center">
               <span className="font-medium">Round {round.id}</span>
@@ -70,7 +73,7 @@ export function GameHistory() {
           </div>
         ))}
         
-        {gameState.roundHistory.length === 0 && (
+        {roundsWithPlayers.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             No round history available yet
           </div>
