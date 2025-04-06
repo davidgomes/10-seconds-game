@@ -103,6 +103,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
           // Add the ended round to history
           const updatedHistory = [lastMessage.data, ...prev.roundHistory].slice(0, 10);
           
+          // Check if the current user won this round
+          if (lastMessage.data.winner === username) {
+            // Increment the user's win count
+            setUserWins(prevWins => prevWins + 1);
+            
+            // Notify the user that they won
+            toast({
+              title: '🎉 You Won!',
+              description: `You picked the highest number: ${lastMessage.data.winningNumber}`,
+              duration: 5000
+            });
+          }
+          
           return {
             ...prev,
             currentRound: lastMessage.data,
@@ -168,7 +181,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
         break;
     }
-  }, [lastMessage, gameState.currentRound.id, username]);
+  }, [lastMessage, gameState.currentRound.id, username, toast]);
 
   // Update user-specific state when gameState changes
   useEffect(() => {
