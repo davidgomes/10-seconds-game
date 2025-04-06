@@ -314,33 +314,42 @@ export class GameManager {
     this.currentRound.active = false;
     this.currentRound.endTime = new Date();
 
-    // Determine the winner
-    if (this.currentRound.picks.length > 0) {
-      // Sort picks by number (descending)
-      const sortedPicks = [...this.currentRound.picks].sort((a, b) => b.number - a.number);
-      const winningPick = sortedPicks[0];
-      
-      this.currentRound.winner = winningPick.username;
-      this.currentRound.winningNumber = winningPick.number;
+    try {
+      // Determine the winner
+      if (this.currentRound.picks.length > 0) {
+        // Sort picks by number (descending)
+        const sortedPicks = [...this.currentRound.picks].sort((a, b) => b.number - a.number);
+        const winningPick = sortedPicks[0];
+        
+        this.currentRound.winner = winningPick.username;
+        this.currentRound.winningNumber = winningPick.number;
 
-      // Update the round in storage
-      const user = await storage.getUserByUsername(winningPick.username);
-      if (user) {
+        // Update the round in storage
+        const user = await storage.getUserByUsername(winningPick.username);
+        if (user) {
+          await storage.updateRound(this.currentRound.id, {
+            endTime: this.currentRound.endTime,
+            winnerUserId: user.id,
+            winningNumber: winningPick.number
+          });
+          
+          // Log the winner for debugging
+          console.log(`Round ${this.currentRound.id} won by ${user.username} (ID: ${user.id}) with number ${winningPick.number}`);
+        }
+      } else {
+        // No picks in this round
         await storage.updateRound(this.currentRound.id, {
-          endTime: this.currentRound.endTime,
-          winnerUserId: user.id,
-          winningNumber: winningPick.number
+          endTime: this.currentRound.endTime
         });
+        
+        console.log(`Round ${this.currentRound.id} ended with no picks`);
       }
-    } else {
-      // No picks in this round
-      await storage.updateRound(this.currentRound.id, {
-        endTime: this.currentRound.endTime
-      });
-    }
 
-    // Broadcast round ended to all clients
-    this.broadcastToAll({ type: "roundEnded", data: this.currentRound });
+      // Broadcast round ended to all clients
+      this.broadcastToAll({ type: "roundEnded", data: this.currentRound });
+    } catch (error) {
+      console.error("Error ending round:", error);
+    }
 
     // Start a new round after a short delay (3 seconds)
     setTimeout(() => this.startNewRound(), 3000);

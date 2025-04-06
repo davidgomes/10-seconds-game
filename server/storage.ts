@@ -157,18 +157,11 @@ export class DatabaseStorage implements IStorage {
       .from(picks)
       .where(eq(picks.userId, userId));
     
-    // Count rounds won by the user - make sure we only count rounds that have ended
+    // Count rounds won by the user - only count rounds where this user is the winner
     const userWins = await db
       .select()
       .from(rounds)
-      .where(
-        and(
-          eq(rounds.winnerUserId, userId),
-          // Only count rounds that have a winning number (completed rounds)
-          // Using IS NOT NULL in SQL query via Drizzle
-          eq(eq(rounds.winningNumber, null), false)
-        )
-      );
+      .where(eq(rounds.winnerUserId, userId));
     
     // Count unique rounds to get the actual rounds played
     const uniqueRounds = new Set(userPicks.map(pick => pick.roundId));
