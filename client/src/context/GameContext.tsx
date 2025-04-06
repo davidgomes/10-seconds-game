@@ -97,14 +97,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
         break;
       case 'roundEnded':
-        setGameState(prev => {
-          if (!prev) return prev;
-          
-          // Add the ended round to history
-          const updatedHistory = [lastMessage.data, ...prev.roundHistory].slice(0, 10);
-          
-          // Check if the current user won this round
-          if (lastMessage.data.winner === username) {
+        // Check if the current user won this round
+        if (lastMessage.data.winner === username) {
+          // Use setTimeout to avoid state updates during render
+          setTimeout(() => {
             // Increment the user's win count
             setUserWins(prevWins => prevWins + 1);
             
@@ -114,7 +110,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
               description: `You picked the highest number: ${lastMessage.data.winningNumber}`,
               duration: 5000
             });
-          }
+          }, 0);
+        }
+
+        setGameState(prev => {
+          if (!prev) return prev;
+          
+          // Add the ended round to history
+          const updatedHistory = [lastMessage.data, ...prev.roundHistory].slice(0, 10);
           
           return {
             ...prev,
