@@ -43,48 +43,32 @@ export function GameStatus() {
     ? "Picking phase" 
     : "Round ended";
 
-  const participationMessage = isParticipating 
-    ? "You're in this round!" 
-    : "Joined late - wait for next round";
-
   return (
-    <Card className="p-6 mb-6">
-      <div className="flex flex-col md:flex-row justify-between items-center">
-        <div className="flex items-center space-x-4 mb-4 md:mb-0">
-          <div className="relative w-20 h-20 flex items-center justify-center">
-            {/* Timer Ring */}
-            <div className="absolute inset-0 rounded-full border-2 border-amber-500 opacity-20"></div>
-            
+    <Card className="p-4 mb-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center space-x-4">
+          <div className="relative w-16 h-16 flex items-center justify-center">
             {/* Timer Background */}
-            <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-              <span className="text-3xl font-mono text-amber-500">
+            <div className="w-full h-full rounded-full bg-amber-50 border-2 border-amber-200 flex items-center justify-center">
+              <span className="text-2xl font-mono text-amber-500">
                 {timeLeft}
               </span>
             </div>
           </div>
           
           <div>
-            <h2 className="text-xl font-bold">Round {gameState.currentRound.id}</h2>
-            <p className="text-blue-500">{roundStatus}</p>
+            <h2 className="text-lg font-bold">Round {gameState.currentRound.id}</h2>
+            <p className="text-blue-500 text-sm">{roundStatus}</p>
           </div>
         </div>
         
         <div className="flex flex-col items-center">
-          <p className="text-gray-600 mb-1">Numbers Shown</p>
-          <div className="flex items-center">
-            <span className="font-bold text-xl">{gameState.currentRound.displayedNumbers.length}</span>
-            <span className="text-gray-400 mx-1">/</span>
-            <span className="text-gray-600">10</span>
+          <div className="text-sm text-gray-600">Current Number</div>
+          <div className="text-2xl font-bold">
+            {gameState.currentRound.displayedNumbers.length > 0 
+              ? gameState.currentRound.displayedNumbers[0] 
+              : '-'}
           </div>
-        </div>
-
-        <div className="mt-4 md:mt-0">
-          <Badge 
-            variant="outline"
-            className={`px-4 py-2 ${isParticipating ? 'bg-green-500' : 'bg-red-500'} text-white`}
-          >
-            {participationMessage}
-          </Badge>
         </div>
       </div>
     </Card>

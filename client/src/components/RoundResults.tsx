@@ -33,53 +33,53 @@ export function RoundResults() {
   const hasWinner = lastRound.winner !== null;
   
   return (
-    <Card className="p-6 text-center">
-      <h3 className="text-xl font-bold mb-4">Round {lastRound.id} Results</h3>
+    <Card className="p-4 text-center">
+      <h3 className="text-lg font-bold mb-2">Round Ended</h3>
       
-      <div className="mb-6">
+      <div className="mb-4">
         {hasWinner ? (
-          <div className="flex justify-center items-center mb-4">
-            <Badge className="bg-[hsl(var(--primary))] text-white px-4 py-2 text-base">
+          <div className="flex justify-center items-center mb-2">
+            <Badge className="bg-green-500 text-white px-3 py-1">
               <span className="font-bold">Winner:</span>{' '}
               {lastRound.winner} with {lastRound.winningNumber}
             </Badge>
           </div>
         ) : (
-          <div className="mb-4">
-            <Badge variant="outline" className="px-4 py-2 text-base">
-              No winners in this round
+          <div className="mb-2">
+            <Badge variant="outline" className="px-3 py-1">
+              No winners
             </Badge>
           </div>
         )}
         
-        <p>
-          Next round starts in <span className="font-bold text-amber-500">{nextRoundTimer}</span> seconds
+        <p className="text-sm">
+          Next round in <span className="font-bold text-amber-500">{nextRoundTimer}</span>
         </p>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {lastRound.picks.map((pick, index) => (
-          <div 
-            key={`${pick.username}-${index}`}
-            className={`bg-gray-50 p-3 rounded-lg shadow flex items-center justify-between ${
-              pick.username === lastRound.winner ? 'bg-green-50' : ''
-            }`}
-          >
-            <span className="font-medium">{pick.username}</span>
-            <span className={`font-bold text-2xl ${
-              pick.username === lastRound.winner ? 'text-green-500' : ''
-            }`}>
-              {pick.number}
-            </span>
-          </div>
-        ))}
-        
-        {lastRound.picks.length === 0 && (
-          <div className="col-span-full text-center p-4 bg-gray-50 rounded-lg">
-            No picks were made in this round
-          </div>
-        )}
-      </div>
+      {lastRound.picks.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {lastRound.picks.map((pick, index) => (
+            <div 
+              key={`${pick.username}-${index}`}
+              className={`bg-gray-50 p-2 rounded-md flex items-center justify-between text-sm ${
+                pick.username === lastRound.winner ? 'bg-green-50' : ''
+              }`}
+            >
+              <span className="truncate">{pick.username}</span>
+              <span className={`font-bold ${
+                pick.username === lastRound.winner ? 'text-green-500' : ''
+              }`}>
+                {pick.number}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center p-2 bg-gray-50 rounded-md text-sm">
+          No picks were made
+        </div>
+      )}
     </Card>
   );
 }

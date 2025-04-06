@@ -85,14 +85,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
           setGameState(prev => {
             if (!prev) return prev;
             
-            const updatedNumbers = [...prev.currentRound.displayedNumbers];
-            updatedNumbers[lastMessage.data.displayIndex] = lastMessage.data.number;
-            
+            // Only keep the latest number instead of the entire array
             return {
               ...prev,
               currentRound: {
                 ...prev.currentRound,
-                displayedNumbers: updatedNumbers
+                displayedNumbers: [lastMessage.data.number]
               }
             };
           });
@@ -257,15 +255,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (!isParticipating) {
-      toast({
-        title: 'Error',
-        description: 'You cannot participate in this round',
-        variant: 'destructive'
-      });
-      return;
-    }
-
+    // All users can participate now
     sendMessage({
       type: 'pickNumber',
       data: { roundId, number }

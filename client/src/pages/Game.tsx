@@ -14,7 +14,8 @@ export default function Game() {
     isParticipating, 
     hasPicked, 
     userPick, 
-    isLoading 
+    isLoading,
+    pickNumber
   } = useGame();
 
   if (isLoading) {
@@ -66,49 +67,40 @@ export default function Game() {
       <GameStatus />
       
       {/* Gameplay Area */}
-      <div className="mb-8 relative">
+      <div className="mb-6 relative">
         {gameState.currentRound.active ? (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-xl font-bold mb-4 text-center">Current Round</h3>
+          <div className="bg-white rounded-xl shadow-lg p-4">
+            {/* If there's a current number to show */}
+            {gameState.currentRound.displayedNumbers.length > 0 && !hasPicked && (
+              <div className="flex flex-col items-center">
+                <p className="text-center mb-4">Click the number to select it!</p>
+                <div onClick={() => pickNumber(gameState.currentRound.id, gameState.currentRound.displayedNumbers[0])}
+                     className="bg-white shadow-lg border-2 border-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-foreground))] hover:text-white transition-colors w-32 h-32 rounded-xl flex items-center justify-center cursor-pointer">
+                  <span className="text-6xl font-bold">{gameState.currentRound.displayedNumbers[0]}</span>
+                </div>
+              </div>
+            )}
             
-            {/* User hasn't picked yet */}
-            {!hasPicked && isParticipating && (
-              <div>
-                <p className="text-center mb-6">Select a number! Remember, you can only pick one.</p>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 justify-items-center">
-                  {gameState.currentRound.displayedNumbers.map((number, index) => (
-                    <NumberCard key={index} number={number} />
-                  ))}
+            {/* If there's no number yet */}
+            {gameState.currentRound.displayedNumbers.length === 0 && !hasPicked && (
+              <div className="text-center p-8">
+                <p>Waiting for the first number to appear...</p>
+                <div className="mt-4 flex justify-center">
+                  <div className="w-12 h-12 rounded-full border-4 border-[hsl(var(--primary))] border-t-transparent animate-spin"></div>
                 </div>
               </div>
             )}
             
             {/* User has picked */}
-            {hasPicked && isParticipating && (
-              <div className="text-center">
-                <div className="mb-6">
+            {hasPicked && (
+              <div className="text-center py-4">
+                <div className="mb-4">
                   <p className="text-lg mb-2">You picked</p>
-                  <div className="inline-block bg-[hsl(var(--secondary))] text-white w-24 h-24 rounded-xl flex items-center justify-center">
+                  <div className="inline-block bg-[hsl(var(--primary))] text-white w-24 h-24 rounded-xl flex items-center justify-center">
                     <span className="text-5xl font-bold">{userPick}</span>
                   </div>
                 </div>
                 <p>Waiting for the round to end...</p>
-                <div className="mt-4 flex justify-center">
-                  <div className="w-16 h-16 rounded-full border-4 border-[hsl(var(--secondary))] opacity-75 animate-pulse"></div>
-                </div>
-              </div>
-            )}
-            
-            {/* User is not participating in this round */}
-            {!isParticipating && (
-              <div className="text-center">
-                <p className="text-lg mb-6">You joined after this round started. You'll be able to participate in the next round!</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 justify-items-center opacity-60">
-                  {gameState.currentRound.displayedNumbers.map((number, index) => (
-                    <NumberCard key={index} number={number} disabled />
-                  ))}
-                </div>
               </div>
             )}
           </div>

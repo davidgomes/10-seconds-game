@@ -90,13 +90,8 @@ export class GameManager {
       connection.userId = user.id;
       connection.username = user.username;
 
-      // Determine if user can participate in current round
-      if (this.currentRound && this.currentRound.active) {
-        // Only allow participation if we haven't started revealing numbers
-        connection.participating = this.currentRound.displayedNumbers.length === 0;
-      } else {
-        connection.participating = true;
-      }
+      // All users can participate in any round
+      connection.participating = true;
 
       // Notify all clients about the new player
       const stats = await storage.getPlayerStats(user.id);
@@ -251,9 +246,9 @@ export class GameManager {
       };
 
       // Reset participation status for all connections
-      for (const [, connection] of this.connections) {
+      Array.from(this.connections.values()).forEach(connection => {
         connection.participating = connection.userId !== undefined;
-      }
+      });
 
       // Broadcast new round to all clients
       this.broadcastToAll({ type: "newRound", data: this.currentRound });
@@ -364,7 +359,9 @@ export class GameManager {
         let connected = false;
         let participating = false;
         
-        for (const [, connection] of this.connections) {
+        // Use Array.from to avoid iterator issues
+        const connections = Array.from(this.connections.values());
+        for (const connection of connections) {
           if (connection.userId === player.id) {
             connected = true;
             participating = connection.participating;
@@ -443,9 +440,11 @@ export class GameManager {
   }
 
   private broadcastToAll(message: ServerMessage) {
-    for (const [socket] of this.connections) {
+    // Convert the map to an array and iterate
+    const sockets = Array.from(this.connections).map(([socket]) => socket);
+    sockets.forEach(socket => {
       this.sendToClient(socket, message);
-    }
+    });
   }
 }
 
