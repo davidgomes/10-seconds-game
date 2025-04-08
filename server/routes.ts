@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { gameManager } from "./gameManager";
-import { getThemeFromCookie, setThemeCookie, clearThemeCookie } from "./cookie-utils";
+import { getThemeFromCookie, setThemeCookie, clearThemeCookie, getUsernameFromCookie, setUsernameCookie, clearUsernameCookie } from "./cookie-utils";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -107,6 +107,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error setting theme preference:', error);
       res.status(500).json({ error: 'Failed to set theme preference' });
+    }
+  });
+
+  // Username API endpoints
+  
+  // Get current username
+  app.get('/api/username', (req, res) => {
+    try {
+      const username = getUsernameFromCookie(req);
+      res.json({ username: username || null });
+    } catch (error) {
+      console.error('Error fetching username:', error);
+      res.status(500).json({ error: 'Failed to fetch username' });
+    }
+  });
+  
+  // Set username
+  app.post('/api/username', (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ error: 'Username is required' });
+      }
+      
+      setUsernameCookie(res, username);
+      
+      res.json({ username });
+    } catch (error) {
+      console.error('Error setting username:', error);
+      res.status(500).json({ error: 'Failed to set username' });
+    }
+  });
+  
+  // Clear username (logout)
+  app.post('/api/logout', (req, res) => {
+    try {
+      clearUsernameCookie(res);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error logging out:', error);
+      res.status(500).json({ error: 'Failed to logout' });
     }
   });
 

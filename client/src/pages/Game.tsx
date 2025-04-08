@@ -1,11 +1,11 @@
 import React from 'react';
 import { useGame } from '@/context/GameContext';
 import { GameStatus } from '@/components/GameStatus';
-import { NumberCard } from '@/components/NumberCard';
 import { RoundResults } from '@/components/RoundResults';
 import { GameTabs } from '@/components/GameTabs';
-import { Skeleton } from '@/components/ui/skeleton';
 import { ThemePicker } from '@/components/ThemePicker';
+import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
 
 export default function Game() {
   const { 
@@ -15,31 +15,9 @@ export default function Game() {
     isParticipating, 
     hasPicked, 
     userPick, 
-    isLoading,
-    pickNumber
+    pickNumber,
+    logout
   } = useGame();
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <header className="mb-6">
-          <div className="flex flex-col lg:flex-row justify-between items-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-primary text-center lg:text-left mb-4 lg:mb-0">
-              10 seconds, 10 numbers, 1 pick
-            </h1>
-            <div className="flex items-center space-x-4">
-              <Skeleton className="h-10 w-40" />
-              <Skeleton className="h-10 w-32" />
-            </div>
-          </div>
-        </header>
-        
-        <Skeleton className="h-32 w-full mb-6" />
-        <Skeleton className="h-64 w-full mb-8" />
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
 
   if (!gameState) return null;
 
@@ -53,16 +31,25 @@ export default function Game() {
           </h1>
           <div className="flex items-center space-x-4">
             <div className="bg-card text-card-foreground rounded-lg shadow-md px-4 py-2">
-              <span className="font-medium">Player:</span>
+              <span className="font-medium">Player:{" "}</span>
               <span className="font-bold text-primary">{username}</span>
             </div>
             <div className="bg-card text-card-foreground rounded-lg shadow-md px-4 py-2">
-              <span className="font-medium">Wins:</span>
+              <span className="font-medium">Wins:{" "}</span>
               <span className="font-bold text-green-500">{userWins}</span>
             </div>
             <div className="ml-2">
               <ThemePicker />
             </div>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={logout}
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
