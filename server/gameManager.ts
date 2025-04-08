@@ -226,10 +226,13 @@ export class GameManager {
         winningNumber: null
       });
 
-      // Generate 10 random numbers between 1 and 100
+      // Generate 10 random numbers between 1 and 100, that are all different
       const numbers: number[] = [];
-      for (let i = 0; i < 10; i++) {
-        numbers.push(Math.floor(Math.random() * 100) + 1);
+      while (numbers.length < 10) {
+        const number = Math.ceil((-Math.log(Math.random()) / 10) * 100);
+        if (!numbers.includes(number)) {
+          numbers.push(number);
+        }
       }
 
       // Initialize the round state
