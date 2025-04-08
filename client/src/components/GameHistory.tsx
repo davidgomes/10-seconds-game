@@ -32,16 +32,16 @@ export function GameHistory() {
       
       <div className="space-y-4">
         {roundsWithPlayers.map(round => (
-          <div key={round.id} className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="bg-gray-50 px-4 py-2 flex justify-between items-center">
+          <div key={round.id} className="border border-border rounded-lg overflow-hidden">
+            <div className="bg-muted px-4 py-2 flex justify-between items-center">
               <span className="font-medium">Round {round.id}</span>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 {formatDate(round.endTime || round.startTime)}
               </span>
             </div>
             <div className="p-4">
               <div className="mb-2">
-                <span className="font-medium text-[hsl(var(--primary))]">Winner:</span>{' '}
+                <span className="font-medium text-primary">Winner:</span>{' '}
                 {round.winner 
                   ? `${round.winner} with ${round.winningNumber}` 
                   : 'No winner'
@@ -53,19 +53,19 @@ export function GameHistory() {
                   {round.picks.map((pick, index) => (
                     <div 
                       key={`${pick.username}-${index}`}
-                      className={`bg-gray-50 p-2 rounded-md flex justify-between ${
-                        pick.username === round.winner ? 'bg-green-50' : ''
+                      className={`bg-muted p-2 rounded-md flex justify-between ${
+                        pick.username === round.winner ? 'bg-accent/30' : ''
                       }`}
                     >
                       <span className="text-sm">{pick.username}</span>
-                      <span className={`font-medium ${pick.username === round.winner ? 'text-green-500' : ''}`}>
+                      <span className={`font-medium ${pick.username === round.winner ? 'text-accent-foreground' : ''}`}>
                         {pick.number}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="mt-3 text-gray-500 text-sm">
+                <div className="mt-3 text-muted-foreground text-sm">
                   No picks were made in this round
                 </div>
               )}
@@ -74,7 +74,7 @@ export function GameHistory() {
         ))}
         
         {roundsWithPlayers.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             No round history available yet
           </div>
         )}

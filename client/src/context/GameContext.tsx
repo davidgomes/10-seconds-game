@@ -1,20 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { GameState, RoundState, Player, ServerMessage, UserPick } from '@/lib/gameTypes';
+import { GameState, Player } from '@/lib/gameTypes';
 import { useToast } from '@/hooks/use-toast';
+import { getUsername, setUsername as setUsernameApi, logout as logoutApi } from '@/lib/userApi';
+import { useLoading } from './LoadingContext';
 
 interface GameContextType {
   gameState: GameState | null;
   isLoggedIn: boolean;
   username: string;
   login: (username: string) => void;
+  logout: () => void;
   pickNumber: (roundId: number, number: number) => void;
   userWins: number;
   isParticipating: boolean;
   hasPicked: boolean;
   userPick: number | null;
   timeLeft: number;
-  isLoading: boolean;
 }
 
 const initialGameState: GameState = {
@@ -44,11 +46,39 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [hasPicked, setHasPicked] = useState(false);
   const [userPick, setUserPick] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(10);
-  const [isLoading, setIsLoading] = useState(true);
   
   const { lastMessage, sendMessage, connected, error } = useWebSocket();
   const { toast } = useToast();
+  const { setLoading } = useLoading();
   
+  // Check if user is already logged in from cookie
+  useEffect(() => {
+    const checkStoredUsername = async () => {
+      try {
+        const storedUsername = await getUsername();
+        
+        if (storedUsername) {
+          setUsername(storedUsername);
+          setIsLoggedIn(true);
+          sendMessage({ type: 'join', username: storedUsername });
+        } else {
+          // If no username is found, ensure we're in a logged out state
+          setIsLoggedIn(false);
+          setUsername('');
+          setLoading(false); // Set loading to false since we're going to Login
+        }
+      } catch (error) {
+        console.error('Error checking stored username:', error);
+        // In case of an error, ensure we're in a logged out state
+        setIsLoggedIn(false);
+        setUsername('');
+        setLoading(false); // Set loading to false since we're going to Login
+      }
+    };
+    
+    checkStoredUsername();
+  }, []);
+
   // Handle errors
   useEffect(() => {
     if (error) {
@@ -69,7 +99,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     switch (lastMessage.type) {
       case 'gameState':
         setGameState(lastMessage.data);
-        setIsLoading(false);
+        setLoading(false);
         break;
       case 'newRound':
         setGameState(prev => ({
@@ -186,7 +216,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
         break;
     }
-  }, [lastMessage, gameState.currentRound.id, username, toast]);
+  }, [lastMessage, gameState.currentRound.id, username, toast, setLoading]);
 
   // Update user-specific state when gameState changes
   useEffect(() => {
@@ -236,7 +266,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [gameState?.currentRound.active, gameState?.currentRound.startTime]);
 
   // Login function
-  const login = (newUsername: string) => {
+  const login = async (newUsername: string) => {
     if (!newUsername.trim()) {
       toast({
         title: 'Error',
@@ -246,11 +276,49 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setUsername(newUsername);
-    setIsLoggedIn(true);
-    
-    // Send join message to the server
-    sendMessage({ type: 'join', username: newUsername });
+    try {
+      // Store username in cookie
+      await setUsernameApi(newUsername);
+      
+      setUsername(newUsername);
+      setIsLoggedIn(true);
+      
+      // Send join message to the server
+      sendMessage({ type: 'join', username: newUsername });
+    } catch (error) {
+      console.error('Error setting username cookie:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save username',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    try {
+      await logoutApi();
+      
+      setIsLoggedIn(false);
+      setUsername('');
+      
+      // Reset user state
+      setUserWins(0);
+      setIsParticipating(false);
+      setHasPicked(false);
+      setUserPick(null);
+      
+      // Reload page to completely reset state
+      window.location.reload();
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to logout',
+        variant: 'destructive'
+      });
+    }
   };
 
   // Pick number function
@@ -287,13 +355,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
         isLoggedIn,
         username,
         login,
+        logout,
         pickNumber,
         userWins,
         isParticipating,
         hasPicked,
         userPick,
-        timeLeft,
-        isLoading
+        timeLeft
       }}
     >
       {children}

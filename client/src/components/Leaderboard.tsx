@@ -36,14 +36,14 @@ export function Leaderboard() {
               return (
                 <TableRow 
                   key={player.id}
-                  className={isCurrentUser ? 'bg-gray-50' : undefined}
+                  className={isCurrentUser ? 'bg-muted/50' : undefined}
                 >
                   <TableCell className="text-center font-medium">
                     {index + 1}
                   </TableCell>
                   <TableCell className="font-medium">
                     {player.username}
-                    {isCurrentUser && <span className="ml-2 text-xs text-gray-500">(You)</span>}
+                    {isCurrentUser && <span className="ml-2 text-xs text-muted-foreground">(You)</span>}
                   </TableCell>
                   <TableCell className="text-green-600 font-medium">
                     {player.wins}
@@ -53,11 +53,11 @@ export function Leaderboard() {
                   </TableCell>
                   <TableCell>
                     {player.connected ? (
-                      <Badge className="bg-green-100 text-green-800">
+                      <Badge variant="secondary" className="text-green-600">
                         Active
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-gray-500">
+                      <Badge variant="outline" className="text-muted-foreground">
                         Disconnected
                       </Badge>
                     )}

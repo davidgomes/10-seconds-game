@@ -3,6 +3,105 @@
 @tailwind utilities;
 
 @layer base {
+  /* Default to vibe theme */
+  :root {
+    /* Ghibli-inspired warm palette */
+    --background: 40 30% 96%;
+    --foreground: 25 25% 25%;
+    --card: 39 35% 95%;
+    --card-foreground: 25 25% 25%;
+    --popover: 40 30% 96%;
+    --popover-foreground: 25 25% 25%;
+
+    /* Warm terracotta/orange accent color, signature in Ghibli films */
+    --primary: 25 75% 55%;
+    --primary-foreground: 40 30% 98%;
+
+    /* Soft pastel green, like Ghibli landscapes */
+    --secondary: 140 20% 85%;
+    --secondary-foreground: 145 30% 25%;
+
+    /* Earth tones for muted elements */
+    --muted: 30 15% 90%;
+    --muted-foreground: 25 20% 45%;
+
+    /* Sky blue accent, like Ghibli skies */
+    --accent: 195 40% 75%;
+    --accent-foreground: 195 50% 25%;
+
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 40 30% 98%;
+
+    /* Softer borders for that hand-painted feel */
+    --border: 30 20% 85%;
+    --input: 30 20% 90%;
+    --ring: 25 75% 55%;
+
+    /* More rounded corners for soft aesthetic */
+    --radius: 1rem;
+  }
+
+  /* Dark theme */
+  [data-theme="dark"] {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+
+  /* Vibe theme - explicitly defined for data-theme="vibe" */
+  [data-theme="vibe"] {
+    /* Ghibli-inspired warm palette */
+    --background: 40 30% 96%;
+    --foreground: 25 25% 25%;
+    --card: 39 35% 95%;
+    --card-foreground: 25 25% 25%;
+    --popover: 40 30% 96%;
+    --popover-foreground: 25 25% 25%;
+
+    /* Warm terracotta/orange accent color, signature in Ghibli films */
+    --primary: 25 75% 55%;
+    --primary-foreground: 40 30% 98%;
+
+    /* Soft pastel green, like Ghibli landscapes */
+    --secondary: 140 20% 85%;
+    --secondary-foreground: 145 30% 25%;
+
+    /* Earth tones for muted elements */
+    --muted: 30 15% 90%;
+    --muted-foreground: 25 20% 45%;
+
+    /* Sky blue accent, like Ghibli skies */
+    --accent: 195 40% 75%;
+    --accent-foreground: 195 50% 25%;
+
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 40 30% 98%;
+
+    /* Softer borders for that hand-painted feel */
+    --border: 30 20% 85%;
+    --input: 30 20% 90%;
+    --ring: 25 75% 55%;
+
+    /* More rounded corners for soft aesthetic */
+    --radius: 1rem;
+  }
+
   * {
     @apply border-border;
   }
