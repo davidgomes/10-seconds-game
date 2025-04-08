@@ -49,8 +49,8 @@ export function GameStatus() {
         <div className="flex items-center space-x-4">
           <div className="relative w-16 h-16 flex items-center justify-center">
             {/* Timer Background */}
-            <div className="w-full h-full rounded-full bg-amber-50 border-2 border-amber-200 flex items-center justify-center">
-              <span className="text-2xl font-mono text-amber-500">
+            <div className="w-full h-full rounded-full bg-muted border-2 border-accent flex items-center justify-center">
+              <span className="text-2xl font-mono text-accent-foreground">
                 {timeLeft}
               </span>
             </div>
@@ -58,12 +58,12 @@ export function GameStatus() {
           
           <div>
             <h2 className="text-lg font-bold">Round {gameState.currentRound.id}</h2>
-            <p className="text-blue-500 text-sm">{roundStatus}</p>
+            <p className="text-primary text-sm">{roundStatus}</p>
           </div>
         </div>
         
         <div className="flex flex-col items-center">
-          <div className="text-sm text-gray-600">Current Number</div>
+          <div className="text-sm text-muted-foreground">Current Number</div>
           <div className="text-2xl font-bold">
             {gameState.currentRound.displayedNumbers.length > 0 
               ? gameState.currentRound.displayedNumbers[0] 

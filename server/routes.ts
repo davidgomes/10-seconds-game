@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { gameManager } from "./gameManager";
+import { getThemeFromCookie, setThemeCookie, clearThemeCookie } from "./cookie-utils";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -69,6 +70,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
       res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    }
+  });
+
+  // Theme API endpoints
+  
+  // Get current theme preference
+  app.get('/api/theme', (req, res) => {
+    try {
+      const theme = getThemeFromCookie(req);
+      res.json({ theme: theme || 'system' });
+    } catch (error) {
+      console.error('Error fetching theme preference:', error);
+      res.status(500).json({ error: 'Failed to fetch theme preference' });
+    }
+  });
+  
+  // Set theme preference
+  app.post('/api/theme', (req, res) => {
+    try {
+      const { theme } = req.body;
+      
+      if (!theme || !['dark', 'vibe', 'system'].includes(theme)) {
+        return res.status(400).json({ error: 'Invalid theme value' });
+      }
+      
+      if (theme === 'system') {
+        // Clear the cookie if the theme is 'system'
+        clearThemeCookie(res);
+      } else {
+        // Set the theme cookie
+        setThemeCookie(res, theme);
+      }
+      
+      res.json({ theme });
+    } catch (error) {
+      console.error('Error setting theme preference:', error);
+      res.status(500).json({ error: 'Failed to set theme preference' });
     }
   });
 

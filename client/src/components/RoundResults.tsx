@@ -39,7 +39,7 @@ export function RoundResults() {
       <div className="mb-4">
         {hasWinner ? (
           <div className="flex justify-center items-center mb-2">
-            <Badge className="bg-green-500 text-white px-3 py-1">
+            <Badge className="bg-green-500 text-primary-foreground px-3 py-1">
               <span className="font-bold">Winner:</span>{' '}
               {lastRound.winner} with {lastRound.winningNumber}
             </Badge>
@@ -53,7 +53,7 @@ export function RoundResults() {
         )}
         
         <p className="text-sm">
-          Next round in <span className="font-bold text-amber-500">{nextRoundTimer}</span>
+          Next round in <span className="font-bold text-accent-foreground">{nextRoundTimer}</span>
         </p>
       </div>
       
@@ -62,13 +62,13 @@ export function RoundResults() {
           {lastRound.picks.map((pick, index) => (
             <div 
               key={`${pick.username}-${index}`}
-              className={`bg-gray-50 p-2 rounded-md flex items-center justify-between text-sm ${
-                pick.username === lastRound.winner ? 'bg-green-50' : ''
+              className={`bg-muted p-2 rounded-md flex items-center justify-between text-sm ${
+                pick.username === lastRound.winner ? 'bg-accent/30' : ''
               }`}
             >
               <span className="truncate">{pick.username}</span>
               <span className={`font-bold ${
-                pick.username === lastRound.winner ? 'text-green-500' : ''
+                pick.username === lastRound.winner ? 'text-accent-foreground' : ''
               }`}>
                 {pick.number}
               </span>
@@ -76,7 +76,7 @@ export function RoundResults() {
           ))}
         </div>
       ) : (
-        <div className="text-center p-2 bg-gray-50 rounded-md text-sm">
+        <div className="text-center p-2 bg-muted rounded-md text-sm">
           No picks were made
         </div>
       )}
