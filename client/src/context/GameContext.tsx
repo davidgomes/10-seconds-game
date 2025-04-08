@@ -63,6 +63,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Handle WebSocket messages
   useEffect(() => {
     if (!lastMessage) return;
+    
+    console.log("message", lastMessage);
 
     switch (lastMessage.type) {
       case 'gameState':
