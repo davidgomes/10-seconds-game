@@ -5,6 +5,10 @@ import { useToast } from '@/hooks/use-toast';
 import { getUsername, setUsername as setUsernameApi, logout as logoutApi } from '@/lib/userApi';
 import { useLoading } from './LoadingContext';
 
+// Constants for timing
+export const ROUND_DURATION_SECONDS = 10;
+export const BETWEEN_ROUNDS_DURATION_SECONDS = 3;
+
 interface GameContextType {
   gameState: GameState | null;
   isLoggedIn: boolean;
@@ -13,10 +17,11 @@ interface GameContextType {
   logout: () => void;
   pickNumber: (roundId: number, number: number) => void;
   userWins: number;
-  isParticipating: boolean;
   hasPicked: boolean;
   userPick: number | null;
   timeLeft: number;
+  timeLeftBetweenRounds: number;
+  showConfetti: boolean;
 }
 
 const initialGameState: GameState = {
@@ -42,10 +47,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
   const [userWins, setUserWins] = useState(0);
-  const [isParticipating, setIsParticipating] = useState(false);
   const [hasPicked, setHasPicked] = useState(false);
   const [userPick, setUserPick] = useState<number | null>(null);
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(ROUND_DURATION_SECONDS);
+  const [timeLeftBetweenRounds, setTimeLeftBetweenRounds] = useState(BETWEEN_ROUNDS_DURATION_SECONDS);
+  const [showConfetti, setShowConfetti] = useState(false);
   
   const { lastMessage, sendMessage, connected, error } = useWebSocket();
   const { toast } = useToast();
@@ -93,8 +99,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Handle WebSocket messages
   useEffect(() => {
     if (!lastMessage) return;
-    
-    console.log("message", lastMessage);
 
     switch (lastMessage.type) {
       case 'gameState':
@@ -110,7 +114,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         // Reset round-specific state
         setHasPicked(false);
         setUserPick(null);
-        setTimeLeft(10);
+        setTimeLeft(ROUND_DURATION_SECONDS);
         break;
       case 'numberRevealed':
         if (lastMessage.data.roundId === gameState.currentRound.id) {
@@ -136,15 +140,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
             // Increment the user's win count
             setUserWins(prevWins => prevWins + 1);
             
+            // Show confetti when user wins
+            setShowConfetti(true);
+            
+            // Hide confetti after 4 seconds
+            setTimeout(() => {
+              setShowConfetti(false);
+            }, BETWEEN_ROUNDS_DURATION_SECONDS * 1000);
+            
             // Notify the user that they won
             toast({
               title: '🎉 You Won!',
               description: `You picked the highest number: ${lastMessage.data.winningNumber}`,
-              duration: 5000
+              duration: BETWEEN_ROUNDS_DURATION_SECONDS * 1000
             });
           }, 0);
         }
-
         setGameState(prev => {
           if (!prev) return prev;
           
@@ -216,7 +227,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
         break;
     }
-  }, [lastMessage, gameState.currentRound.id, username, toast, setLoading]);
+  }, [lastMessage, gameState?.currentRound.id, username, toast, setLoading]);
 
   // Update user-specific state when gameState changes
   useEffect(() => {
@@ -226,7 +237,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       
       if (player) {
         setUserWins(player.wins);
-        setIsParticipating(player.participating);
       }
       
       // Check if the user has picked in the current round
@@ -242,28 +252,36 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [gameState, isLoggedIn, username]);
 
   // Timer logic
-  useEffect(() => {
-    if (!gameState?.currentRound.active) {
-      return;
-    }
+  useEffect(() => {    
+    const updateTimers = () => {
+      if (gameState?.currentRound.active) {
+        // Active round timer logic
+        const startTime = new Date(gameState.currentRound.startTime).getTime();
+        const now = Date.now();
+        const elapsed = now - startTime;
+        const remaining = Math.max(0, ROUND_DURATION_SECONDS * 1000 - elapsed);
+        // Use decimal for smoother progress
+        const newTimeLeft = parseFloat((remaining / 1000).toFixed(1));
+        setTimeLeft(newTimeLeft);
+      } else if (gameState?.currentRound.endTime) {
+        // Between rounds timer logic
+        const endTime = new Date(gameState.currentRound.endTime).getTime();
+        const now = Date.now();
+        const elapsedSinceEnd = now - endTime;
+        const remainingBetweenRounds = Math.max(0, BETWEEN_ROUNDS_DURATION_SECONDS * 1000 - elapsedSinceEnd);
+        // Use decimal for smoother progress
+        const newBetweenRoundsTime = parseFloat((remainingBetweenRounds / 1000).toFixed(1));
+        setTimeLeftBetweenRounds(newBetweenRoundsTime);
+      }
+    };
 
-    // Calculate time left
-    const startTime = new Date(gameState.currentRound.startTime).getTime();
-    const now = Date.now();
-    const elapsed = now - startTime;
-    const remaining = Math.max(0, 10000 - elapsed);
-    setTimeLeft(Math.ceil(remaining / 1000));
-
-    // Set up the timer
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        const newValue = Math.max(0, prev - 1);
-        return newValue;
-      });
-    }, 1000);
+    const timer = setInterval(updateTimers, 100);
+    
+    // Update immediately when component mounts or dependencies change
+    updateTimers();
 
     return () => clearInterval(timer);
-  }, [gameState?.currentRound.active, gameState?.currentRound.startTime]);
+  }, [gameState]);
 
   // Login function
   const login = async (newUsername: string) => {
@@ -305,7 +323,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       
       // Reset user state
       setUserWins(0);
-      setIsParticipating(false);
       setHasPicked(false);
       setUserPick(null);
       
@@ -358,10 +375,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
         logout,
         pickNumber,
         userWins,
-        isParticipating,
         hasPicked,
         userPick,
-        timeLeft
+        timeLeft,
+        timeLeftBetweenRounds,
+        showConfetti
       }}
     >
       {children}
