@@ -10,6 +10,7 @@ import {
   type Player,
   type UserPick
 } from "@shared/schema";
+import { v4 as uuidv4 } from "uuid";
 
 // Connection tracking
 interface Connection {
@@ -158,7 +159,8 @@ export class GameManager {
         userId: connection.userId,
         roundId: this.currentRound.id,
         number: data.number,
-        timestamp: new Date()
+        timestamp: new Date(),
+        writeId: uuidv4()
       });
 
       // Update the current round state
@@ -167,7 +169,7 @@ export class GameManager {
         number: data.number
       };
       
-      this.currentRound.picks.push(userPick);
+      // this.currentRound.picks.push(userPick);
 
       // Notify all clients about the pick
       this.broadcastToAll({
@@ -233,7 +235,6 @@ export class GameManager {
         startTime,
         endTime: null,
         displayedNumbers: [],
-        picks: [],
         winner: null,
         winningNumber: null
       };
@@ -307,27 +308,31 @@ export class GameManager {
     this.currentRound.endTime = new Date();
 
     try {
-      // Determine the winner
-      if (this.currentRound.picks.length > 0) {
+      // Determine the winner from the database
+      const picks = await storage.getPicksByRound(this.currentRound.id);
+      if (picks.length > 0) {
         // Sort picks by number (descending)
-        const sortedPicks = [...this.currentRound.picks].sort((a, b) => b.number - a.number);
+        const sortedPicks = [...picks].sort((a, b) => b.number - a.number);
         const winningPick = sortedPicks[0];
         
-        this.currentRound.winner = winningPick.username;
+        const user = await storage.getUserByUsername(winningPick.userId.toString());
+        
+        if (!user) {
+          throw new Error("User not found for pick");
+        }
+
+        this.currentRound.winner = user.username;
         this.currentRound.winningNumber = winningPick.number;
 
         // Update the round in storage
-        const user = await storage.getUserByUsername(winningPick.username);
-        if (user) {
-          await storage.updateRound(this.currentRound.id, {
-            endTime: this.currentRound.endTime,
+        await storage.updateRound(this.currentRound.id, {
+          endTime: this.currentRound.endTime,
             winnerUserId: user.id,
             winningNumber: winningPick.number
           });
           
-          // Log the winner for debugging
-          console.log(`Round ${this.currentRound.id} won by ${user.username} (ID: ${user.id}) with number ${winningPick.number}`);
-        }
+        // Log the winner for debugging
+        console.log(`Round ${this.currentRound.id} won by ${user.username} (ID: ${user.id}) with number ${winningPick.number}`);
       } else {
         // No picks in this round
         await storage.updateRound(this.currentRound.id, {

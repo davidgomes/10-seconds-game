@@ -29,9 +29,12 @@ export default function Game() {
     number: number;
     round_id: number;
   }>({
-    url: `http://localhost:5006/api/shape`,
+    // url: `http://localhost:5006/api/shape`,
+    url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
-      table: `round_numbers`
+      table: `round_numbers`,
+      source_id: `d73f49ae-0d15-4738-b1d4-02d4ad91378e`,
+      source_secret: `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiJkNzNmNDlhZS0wZDE1LTQ3MzgtYjFkNC0wMmQ0YWQ5MTM3OGUiLCJpYXQiOjE3NDQzMTg2NDN9.AYDlrYgqo9Tk-1CoaQQ51OLRNGBZ9aLKeQHMPIYE3eA`,
     }
   });
   
@@ -42,9 +45,12 @@ export default function Game() {
     number: number;
     timestamp: string;
   }>({
-    url: `http://localhost:5006/api/shape`,
+    // url: `http://localhost:5006/api/shape`,
+    url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
-      table: `picks`
+      table: `picks`,
+      source_id: `d73f49ae-0d15-4738-b1d4-02d4ad91378e`,
+      source_secret: `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiJkNzNmNDlhZS0wZDE1LTQ3MzgtYjFkNC0wMmQ0YWQ5MTM3OGUiLCJpYXQiOjE3NDQzMTg2NDN9.AYDlrYgqo9Tk-1CoaQQ51OLRNGBZ9aLKeQHMPIYE3eA`,
     }
   });
   
@@ -52,8 +58,8 @@ export default function Game() {
   const currentRoundNumbers = roundNumbers?.filter(item => item.round_id === gameState?.currentRound.id).sort((a, b) => a.displayIndex - b.displayIndex);
   const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
   
-  console.log("currentNumber", currentNumber?.number);
-  console.log("gameState.currentRound.displayedNumbers", gameState?.currentRound.displayedNumbers);
+  // console.log("currentNumber", currentNumber?.number);
+  // console.log("gameState.currentRound.displayedNumbers", gameState?.currentRound.displayedNumbers);
   
   if (!gameState) return null;
   
@@ -136,7 +142,7 @@ export default function Game() {
                   "flex justify-center items-center h-52",
                   "flex-row space-x-8"
                 )}>
-                  {isRoundOver && gameState.currentRound.picks.length === 0 ? (
+                  {isRoundOver && gameState.currentRound.winner === null ? (
                     <div className="flex flex-col items-center">
                       <p className="text-sm text-muted-foreground mb-2">
                         No Winners
@@ -173,7 +179,7 @@ export default function Game() {
                       </div>
                       {/* Show different messages based on game state */}
                       {!hasPicked && !isRoundOver && (
-                        <p className="mt-3 text-sm">Click to select this number!</p>
+                        <p className="mt-3 text-sm">You must pick the last available number!</p>
                       )}
                     </div>
                   ) : (

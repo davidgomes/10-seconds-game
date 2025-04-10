@@ -4,6 +4,8 @@ import { GameState, Player } from '@/lib/gameTypes';
 import { useToast } from '@/hooks/use-toast';
 import { getUsername, setUsername as setUsernameApi, logout as logoutApi } from '@/lib/userApi';
 import { useLoading } from './LoadingContext';
+import { v4 as uuidv4 } from 'uuid'
+import { usePGlite } from '@electric-sql/pglite-react';
 
 // Constants for timing
 export const ROUND_DURATION_SECONDS = 10;
@@ -31,7 +33,6 @@ const initialGameState: GameState = {
     startTime: new Date(),
     endTime: null,
     displayedNumbers: [],
-    picks: [],
     winner: null,
     winningNumber: null
   },
@@ -56,6 +57,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const { lastMessage, sendMessage, connected, error } = useWebSocket();
   const { toast } = useToast();
   const { setLoading } = useLoading();
+
+  const db = usePGlite()
   
   // Check if user is already logged in from cookie
   useEffect(() => {
@@ -219,13 +222,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
           setGameState(prev => {
             if (!prev) return prev;
             
-            const updatedPicks = [...prev.currentRound.picks, lastMessage.data.pick];
+            // const updatedPicks = [...prev.currentRound.picks, lastMessage.data.pick];
             
             return {
               ...prev,
               currentRound: {
                 ...prev.currentRound,
-                picks: updatedPicks
+                // picks: updatedPicks
               }
             };
           });
@@ -242,24 +245,42 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Update user-specific state when gameState changes
   useEffect(() => {
-    if (isLoggedIn && gameState) {
-      // Find the user in the players list
-      const player = gameState.players.find(p => p.username === username);
-      
+    const updateUserState = async () => {
+      if (isLoggedIn && gameState) {
+        // Find the user in the players list
+        const player = gameState.players.find(p => p.username === username);
+        
       if (player) {
         setUserWins(player.wins);
       }
       
+      if (!player) {
+        throw new Error("Player not found");
+      }
+      
       // Check if the user has picked in the current round
-      const userPickObj = gameState.currentRound.picks.find(pick => pick.username === username);
-      if (userPickObj) {
+      const userPick = await db.sql<{
+        id: number;
+        user_id: number;
+        round_id: number;
+        number: number;
+        timestamp: Date;
+      }>`SELECT * FROM picks WHERE user_id = ${player.id} AND round_id = ${gameState.currentRound.id}`;
+      if (userPick.rows.length > 1) {
+        throw new Error("Multiple picks found for the same user in the same round");
+      }
+
+      if (userPick.rows.length > 0) {
         setHasPicked(true);
-        setUserPick(userPickObj.number);
+        setUserPick(userPick.rows[0].number);
       } else {
         setHasPicked(false);
         setUserPick(null);
+        }
       }
-    }
+    };
+
+    updateUserState();
   }, [gameState, isLoggedIn, username]);
 
   // Timer logic
@@ -350,7 +371,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   // Pick number function
-  const pickNumber = (roundId: number, number: number) => {
+  const pickNumber = async (roundId: number, number: number) => {
     if (!isLoggedIn) {
       toast({
         title: 'Error',
@@ -370,10 +391,67 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
 
     // All users can participate now
-    sendMessage({
+    /*sendMessage({
       type: 'pickNumber',
       data: { roundId, number }
-    });
+    });*/
+    
+    const currentPlayer = gameState?.players.find(p => p.username === username);
+    if (!currentPlayer) {
+      toast({
+        title: 'Error',
+        description: 'Could not find your player information',
+        variant: 'destructive'
+      });
+      return;
+    }  
+
+    try {
+      await db.sql`
+      INSERT INTO picks (
+        id,
+        user_id,
+        round_id,
+        number,
+        timestamp
+      )
+      VALUES (
+        ${uuidv4()},
+        ${currentPlayer.id},
+        ${roundId},
+        ${number},
+        ${new Date()}
+      )
+    `;
+    
+      setHasPicked(true);
+      setUserPick(number);
+      
+      console.log("all picks", await db.sql`SELECT * FROM picks`);
+    } catch (error) {
+      // Handle the error from the server
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('last available number')) {
+        toast({
+          title: 'Error',
+          description: 'You must pick the last available number',
+          variant: 'destructive'
+        });
+      } else if (errorMessage.includes('already been picked')) {
+        toast({
+          title: 'Error',
+          description: 'This number has already been picked',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to pick number',
+          variant: 'destructive'
+        });
+      }
+    }
   };
 
   return (

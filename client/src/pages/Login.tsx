@@ -70,7 +70,7 @@ export default function Login() {
               </li>
               <li className="flex items-center">
                 <Hand className="h-5 w-5 text-secondary-foreground mr-2" />
-                Select only ONE number per round
+                You must pick the last available number
               </li>
               <li className="flex items-center">
                 <Trophy className="h-5 w-5 text-green-500 mr-2" />

@@ -18,6 +18,7 @@ import {
 } from '@electric-sql/pglite-react'
 import { type PGliteWithLive } from '@electric-sql/pglite/live'
 import { loadPGlite } from './db';
+import ChangeLogSynchronizer from "@/sync";
 
 function ProtectedRouteWithProviders({ component: Component }: { component: React.ComponentType }) {
   const { isLoggedIn } = useGame();
@@ -35,23 +36,11 @@ function ProtectedRouteWithProviders({ component: Component }: { component: Reac
 }
 
 function AppRoutes() {
-  return (
-    <GameProvider>
-      <Switch>
-        <Route path="/" component={() => <ProtectedRouteWithProviders component={Game} />} />
-        <Route component={NotFound} />
-      </Switch>
-      <Toaster />
-    </GameProvider>
-  );
-}
-
-function App() {
   const [db, setDb] = useState<PGliteWithLive>()
 
   useEffect(() => {
     let isMounted = true
-    // let writePathSync: ChangeLogSynchronizer
+    let writePathSync: ChangeLogSynchronizer
 
     async function init() {
       const pglite = await loadPGlite()
@@ -60,8 +49,8 @@ function App() {
         return
       }
 
-      // writePathSync = new ChangeLogSynchronizer(pglite)
-      // writePathSync.start()
+      writePathSync = new ChangeLogSynchronizer(pglite)
+      writePathSync.start()
 
       setDb(pglite)
     }
@@ -77,14 +66,33 @@ function App() {
     }
   }, []);
 
+  if (!db) {
+    return null;
+  }
+  
+  return (
+    <PGliteProvider db={db}>
+      <GameProvider>
+        <Switch>
+          <Route path="/" component={() => <ProtectedRouteWithProviders component={Game} />} />
+        <Route component={NotFound} />
+        </Switch>
+        <Toaster />
+      </GameProvider>
+    </PGliteProvider>
+  );
+}
+
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      
       <ThemeProvider>
         <LoadingProvider>
           <GlobalLoadingIndicator />
           <AppRoutes />
-        </LoadingProvider>
-      </ThemeProvider>
+          </LoadingProvider>
+        </ThemeProvider>
     </QueryClientProvider>
   );
 }

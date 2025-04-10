@@ -27,6 +27,7 @@ export const picks = pgTable("picks", {
   roundId: integer("round_id").notNull().references(() => rounds.id),
   number: integer("number").notNull(),
   timestamp: timestamp("timestamp").notNull(),
+  writeId: uuid("write_id").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users);
@@ -45,7 +46,6 @@ export interface RoundState {
   startTime: Date;
   endTime: Date | null;
   displayedNumbers: number[];
-  picks: UserPick[];
   winner: string | null;
   winningNumber: number | null;
 }

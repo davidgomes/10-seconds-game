@@ -4,7 +4,7 @@ import { electricSync } from '@electric-sql/pglite-sync'
 
 import localSchemaMigrations from './local-schema.sql?raw'
 
-const DATA_DIR = 'idb://local-db'
+const DATA_DIR = 'idb://local-db-4'
 
 const registry = new Map<string, Promise<PGliteWithLive>>()
 
@@ -21,7 +21,7 @@ export async function loadPGlite(): Promise<PGliteWithLive> {
 }
 
 async function _loadPGlite(): Promise<PGliteWithLive> {
-  const pglite: PGliteWithLive = await PGlite.create(DATA_DIR, {
+  const pglite: PGliteWithLive = await PGlite.create({
     extensions: {
       electric: electricSync(),
       live,
@@ -35,8 +35,8 @@ async function _loadPGlite(): Promise<PGliteWithLive> {
       url: `${`https://api.electric-sql.cloud`}/v1/shape`,
       params: {
         table: 'picks',
-        source_id: '5f4cc37e-b223-445d-b559-8a3ea4e1fecc',
-        source_secret: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiI1ZjRjYzM3ZS1iMjIzLTQ0NWQtYjU1OS04YTNlYTRlMWZlY2MiLCJpYXQiOjE3NDQxODQ5MjZ9.s2zPbyVCv7kjvroUYOnQt-0Ln0qRK66f0Aq9plNh4b0',
+        source_id: 'd73f49ae-0d15-4738-b1d4-02d4ad91378e',
+        source_secret: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiJkNzNmNDlhZS0wZDE1LTQ3MzgtYjFkNC0wMmQ0YWQ5MTM3OGUiLCJpYXQiOjE3NDQzMTg2NDN9.AYDlrYgqo9Tk-1CoaQQ51OLRNGBZ9aLKeQHMPIYE3eA',
         // ...envParams,
       },
     },

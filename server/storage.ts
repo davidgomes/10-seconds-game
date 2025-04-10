@@ -17,6 +17,7 @@ import {
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
 
 // Export these types based on the schemas in shared/schema.ts
 export type InsertRound = z.infer<typeof insertRoundSchema>;
@@ -36,9 +37,10 @@ export interface IStorage {
   createRound(round: InsertRound): Promise<Round>;
   updateRound(id: number, round: Partial<Round>): Promise<Round | undefined>;
   getRoundHistory(limit: number): Promise<Round[]>;
+  getRoundNumbers(roundId: number): Promise<RoundNumber[]>;
   
   // Pick methods
-  createPick(pick: InsertPick): Promise<Pick>;
+  createPick(pick: InsertPick, id?: string): Promise<Pick>;
   getPicksByRound(roundId: number): Promise<Pick[]>;
   getUserPickForRound(userId: number, roundId: number): Promise<Pick | undefined>;
   
@@ -129,11 +131,22 @@ export class DatabaseStorage implements IStorage {
     return allRounds.filter(round => round.endTime !== null);
   }
 
+  async getRoundNumbers(roundId: number): Promise<RoundNumber[]> {
+    return await db
+      .select()
+      .from(roundNumbers)
+      .where(eq(roundNumbers.roundId, roundId))
+      .orderBy(roundNumbers.displayIndex);
+  }
+
   // Pick methods
-  async createPick(insertPick: InsertPick): Promise<Pick> {
+  async createPick(insertPick: InsertPick, id?: string): Promise<Pick> {
     const [pick] = await db
       .insert(picks)
-      .values(insertPick)
+      .values({
+        ...insertPick,
+        id: id || uuidv4()
+      })
       .returning();
     
     return pick;

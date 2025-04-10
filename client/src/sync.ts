@@ -1,5 +1,6 @@
 import { type Operation } from '@electric-sql/client'
 import { type PGliteWithLive } from '@electric-sql/pglite/live'
+import { type Change, type Transaction } from '@shared/types'
 
 // Create a simple API client
 const api = {
@@ -15,20 +16,6 @@ const api = {
     return response;
   }
 };
-
-type Change = {
-  id: number
-  operation: Operation
-  value: {
-    id: string
-    user_id?: number
-    round_id?: number
-    number?: number
-    timestamp?: Date
-  }
-  write_id: string
-  transaction_id: string
-}
 
 type SendResult = 'accepted' | 'rejected' | 'retry'
 
@@ -154,7 +141,7 @@ export default class ChangeLogSynchronizer {
     try {
         console.log('transactions', transactions);
         
-    //   response = await api.request(path, 'POST', transactions, signal)
+        response = await api.request(path, 'POST', transactions, signal)
     } catch (_err) {
       return 'retry'
     }

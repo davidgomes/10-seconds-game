@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS picks_synced (
 	"user_id" integer NOT NULL,
 	"round_id" integer NOT NULL,
 	"number" integer NOT NULL,
-	"timestamp" timestamp NOT NULL
+	"timestamp" timestamp NOT NULL,
+  "write_id" uuid NOT NULL
 );
 
 -- The `picks_local` table for local optimistic state.
