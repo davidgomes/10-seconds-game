@@ -52,6 +52,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [timeLeft, setTimeLeft] = useState(ROUND_DURATION_SECONDS);
   const [timeLeftBetweenRounds, setTimeLeftBetweenRounds] = useState(BETWEEN_ROUNDS_DURATION_SECONDS);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isJoined, setIsJoined] = useState(false);
   
   const { lastMessage, sendMessage, connected, error } = useWebSocket();
   const { toast } = useToast();
@@ -66,7 +67,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         if (storedUsername) {
           setUsername(storedUsername);
           setIsLoggedIn(true);
-          sendMessage({ type: 'join', username: storedUsername });
+          // Don't send message here - we'll handle it in a separate effect
         } else {
           // If no username is found, ensure we're in a logged out state
           setIsLoggedIn(false);
@@ -84,6 +85,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
     
     checkStoredUsername();
   }, []);
+
+  // Send join message only when connected and username is set
+  useEffect(() => {
+    if (connected && isLoggedIn && username && !isJoined) {
+      // Send join message to the server once connected
+      sendMessage({ type: 'join', username });
+      setIsJoined(true);
+    }
+  }, [connected, isLoggedIn, username, sendMessage, isJoined]);
 
   // Handle errors
   useEffect(() => {
