@@ -24,7 +24,7 @@ export default function Game() {
     showConfetti
   } = useGame();
   
-  const { data } = useShape<{
+  const { data: roundNumbers } = useShape<{
     displayIndex: number;
     number: number;
     round_id: number;
@@ -35,16 +35,28 @@ export default function Game() {
     }
   });
   
+  const { data: picks } = useShape<{
+    id: number;
+    user_id: number;
+    round_id: number;
+    number: number;
+    timestamp: string;
+  }>({
+    url: `http://localhost:5006/api/shape`,
+    params: {
+      table: `picks`
+    }
+  });
+  
   // find the current number to display from `data`
-  const currentRoundNumbers = data?.filter(item => item.round_id === gameState?.currentRound.id).sort((a, b) => a.displayIndex - b.displayIndex);
+  const currentRoundNumbers = roundNumbers?.filter(item => item.round_id === gameState?.currentRound.id).sort((a, b) => a.displayIndex - b.displayIndex);
   const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
   
   console.log("currentNumber", currentNumber?.number);
-
+  console.log("gameState.currentRound.displayedNumbers", gameState?.currentRound.displayedNumbers);
+  
   if (!gameState) return null;
   
-  console.log(gameState.currentRound.displayedNumbers);
-
   const roundStatus = gameState.currentRound.active 
     ? "Picking phase" 
     : "Round ended";
@@ -136,7 +148,7 @@ export default function Game() {
                         </span>
                       </div>
                     </div>
-                  ) : gameState.currentRound.displayedNumbers.length > 0 || isRoundOver ? (
+                  ) : currentNumber?.number || isRoundOver ? (
                     <div className="flex flex-col items-center">
                       <p className="text-sm text-muted-foreground mb-2">
                         {isRoundOver ? "Winning Number" : "Current Number"}

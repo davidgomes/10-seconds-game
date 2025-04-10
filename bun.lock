@@ -4,6 +4,8 @@
     "": {
       "name": "rest-express",
       "dependencies": {
+        "@electric-sql/pglite-react": "^0.2.17",
+        "@electric-sql/pglite-sync": "^0.3.1",
         "@electric-sql/react": "^1.0.3",
         "@hookform/resolvers": "^3.9.1",
         "@jridgewell/trace-mapping": "^0.3.25",
@@ -146,7 +148,15 @@
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
 
-    "@electric-sql/client": ["@electric-sql/client@1.0.3", "", { "optionalDependencies": { "@rollup/rollup-darwin-arm64": "^4.18.1" } }, "sha512-Z1yxiV9RZB+EPbwPeL7FrutwJD0Ep3mmOzZagQYrWEnWfLm8rmx7IarlCsMTl8W4SBydSaRq0wDRspnWCoCg9Q=="],
+    "@electric-sql/client": ["@electric-sql/client@1.0.0", "", { "optionalDependencies": { "@rollup/rollup-darwin-arm64": "^4.18.1" } }, "sha512-kGiVbBIlMqc/CeJpWZuLjxNkm0836NWxeMtIWH2w5IUK8pUL13hyxg3ZkR7+FlTGhpKuZRiCP5nPOH9D6wbhPw=="],
+
+    "@electric-sql/experimental": ["@electric-sql/experimental@1.0.0", "", { "optionalDependencies": { "@rollup/rollup-darwin-arm64": "^4.18.1" }, "peerDependencies": { "@electric-sql/client": "1.0.0" } }, "sha512-wOKZyph3cvJ4J5fDwqDpR7nilPOHEFwAtbAM5X/PhV3JZCSzmkbosaQRWsxbHQ80MJv7gNFP960+TyqGAjqouQ=="],
+
+    "@electric-sql/pglite": ["@electric-sql/pglite@0.2.17", "", {}, "sha512-qEpKRT2oUaWDH6tjRxLHjdzMqRUGYDnGZlKrnL4dJ77JVMcP2Hpo3NYnOSPKdZdeec57B6QPprCUFg0picx5Pw=="],
+
+    "@electric-sql/pglite-react": ["@electric-sql/pglite-react@0.2.17", "", { "peerDependencies": { "@electric-sql/pglite": "^0.2.17", "react": "^18.0.0 || ^19.0.0 || ^19.0.0-rc" } }, "sha512-TEdV1UAUO50gb/okYcVaiG2dQdox53K2E8jSEl0Wa/97x3Xi238ls7ZB7wgmoqNgy45f/tgYxyztml03EFClng=="],
+
+    "@electric-sql/pglite-sync": ["@electric-sql/pglite-sync@0.3.1", "", { "dependencies": { "@electric-sql/client": "1.0.0", "@electric-sql/experimental": "1.0.0" }, "peerDependencies": { "@electric-sql/pglite": "^0.2.17" } }, "sha512-Wyb0iKBmnbTye4UYg9kTESf/7wfO9F9eCiRRqPGtYzM3jSTZHBvmuqUUwnxE31NuzTiH3qIY5GWvgmL+xK6PuA=="],
 
     "@electric-sql/react": ["@electric-sql/react@1.0.3", "", { "dependencies": { "@electric-sql/client": "1.0.3", "use-sync-external-store": "^1.2.2" }, "peerDependencies": { "react": ">=18.3.1 <20.0.0" }, "optionalPeers": ["react"] }, "sha512-cwTWaCbKeUIE2O06apTog4FPUuIeN7Y1DvJgQdHZvNaCADcJuo4pfRGscZxAj0Srl9otyahoOeAM/uCs7wbsFA=="],
 
@@ -1143,6 +1153,8 @@
     "@babel/helper-compilation-targets/lru-cache": ["lru-cache@5.1.1", "", { "dependencies": { "yallist": "^3.0.2" } }, "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w=="],
 
     "@babel/traverse/debug": ["debug@4.3.7", "", { "dependencies": { "ms": "^2.1.3" } }, "sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ=="],
+
+    "@electric-sql/react/@electric-sql/client": ["@electric-sql/client@1.0.3", "", { "optionalDependencies": { "@rollup/rollup-darwin-arm64": "^4.18.1" } }, "sha512-Z1yxiV9RZB+EPbwPeL7FrutwJD0Ep3mmOzZagQYrWEnWfLm8rmx7IarlCsMTl8W4SBydSaRq0wDRspnWCoCg9Q=="],
 
     "@esbuild-kit/core-utils/esbuild": ["esbuild@0.18.20", "", { "optionalDependencies": { "@esbuild/android-arm": "0.18.20", "@esbuild/android-arm64": "0.18.20", "@esbuild/android-x64": "0.18.20", "@esbuild/darwin-arm64": "0.18.20", "@esbuild/darwin-x64": "0.18.20", "@esbuild/freebsd-arm64": "0.18.20", "@esbuild/freebsd-x64": "0.18.20", "@esbuild/linux-arm": "0.18.20", "@esbuild/linux-arm64": "0.18.20", "@esbuild/linux-ia32": "0.18.20", "@esbuild/linux-loong64": "0.18.20", "@esbuild/linux-mips64el": "0.18.20", "@esbuild/linux-ppc64": "0.18.20", "@esbuild/linux-riscv64": "0.18.20", "@esbuild/linux-s390x": "0.18.20", "@esbuild/linux-x64": "0.18.20", "@esbuild/netbsd-x64": "0.18.20", "@esbuild/openbsd-x64": "0.18.20", "@esbuild/sunos-x64": "0.18.20", "@esbuild/win32-arm64": "0.18.20", "@esbuild/win32-ia32": "0.18.20", "@esbuild/win32-x64": "0.18.20" }, "bin": "bin/esbuild" }, "sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA=="],
 

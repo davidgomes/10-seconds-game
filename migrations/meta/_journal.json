@@ -8,6 +8,20 @@
       "when": 1744059015052,
       "tag": "0000_acoustic_gorilla_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1744283314314,
+      "tag": "0001_marvelous_sasquatch",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1744287087912,
+      "tag": "0002_red_wallop",
+      "breakpoints": true
     }
   ]
 }

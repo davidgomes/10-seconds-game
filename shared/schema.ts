@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -22,7 +22,7 @@ export const roundNumbers = pgTable("round_numbers", {
 });
 
 export const picks = pgTable("picks", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   roundId: integer("round_id").notNull().references(() => rounds.id),
   number: integer("number").notNull(),

@@ -9,6 +9,15 @@ import { GameProvider, useGame } from "@/context/GameContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { LoadingProvider, useLoading } from "@/context/LoadingContext";
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
+import { useEffect } from "react";
+import { useState } from "react";
+import {
+  PGliteProvider,
+  useLiveQuery,
+  usePGlite,
+} from '@electric-sql/pglite-react'
+import { type PGliteWithLive } from '@electric-sql/pglite/live'
+import { loadPGlite } from './db';
 
 function ProtectedRouteWithProviders({ component: Component }: { component: React.ComponentType }) {
   const { isLoggedIn } = useGame();
@@ -38,6 +47,36 @@ function AppRoutes() {
 }
 
 function App() {
+  const [db, setDb] = useState<PGliteWithLive>()
+
+  useEffect(() => {
+    let isMounted = true
+    // let writePathSync: ChangeLogSynchronizer
+
+    async function init() {
+      const pglite = await loadPGlite()
+
+      if (!isMounted) {
+        return
+      }
+
+      // writePathSync = new ChangeLogSynchronizer(pglite)
+      // writePathSync.start()
+
+      setDb(pglite)
+    }
+
+    init()
+
+    return () => {
+      isMounted = false
+
+      // if (writePathSync !== undefined) {
+        // writePathSync.stop()
+      // }
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>

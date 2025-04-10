@@ -1,0 +1,1 @@
+ALTER TABLE "picks" ALTER COLUMN "id" SET DATA TYPE uuid;
