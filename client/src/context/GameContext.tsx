@@ -30,7 +30,6 @@ const initialGameState: GameState = {
     active: false,
     startTime: new Date(),
     endTime: null,
-    numbers: [],
     displayedNumbers: [],
     picks: [],
     winner: null,
@@ -131,12 +130,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
           setGameState(prev => {
             if (!prev) return prev;
             
-            // Only keep the latest number instead of the entire array
+            let newDisplayedNumbers = prev.currentRound.displayedNumbers;
+            newDisplayedNumbers[lastMessage.data.displayIndex] = lastMessage.data.number;
+            
             return {
               ...prev,
               currentRound: {
                 ...prev.currentRound,
-                displayedNumbers: [lastMessage.data.number]
+                displayedNumbers: newDisplayedNumbers,
               }
             };
           });

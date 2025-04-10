@@ -8,6 +8,7 @@ import { LogOut, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-confetti';
 import { ROUND_DURATION_SECONDS, BETWEEN_ROUNDS_DURATION_SECONDS } from '@/context/GameContext';
+import { useShape } from '@electric-sql/react';
 
 export default function Game() {
   const { 
@@ -22,8 +23,27 @@ export default function Game() {
     timeLeftBetweenRounds,
     showConfetti
   } = useGame();
+  
+  const { data } = useShape<{
+    displayIndex: number;
+    number: number;
+    round_id: number;
+  }>({
+    url: `http://localhost:5006/api/shape`,
+    params: {
+      table: `round_numbers`
+    }
+  });
+  
+  // find the current number to display from `data`
+  const currentRoundNumbers = data?.filter(item => item.round_id === gameState?.currentRound.id).sort((a, b) => a.displayIndex - b.displayIndex);
+  const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
+  
+  console.log("currentNumber", currentNumber?.number);
 
   if (!gameState) return null;
+  
+  console.log(gameState.currentRound.displayedNumbers);
 
   const roundStatus = gameState.currentRound.active 
     ? "Picking phase" 
@@ -130,13 +150,13 @@ export default function Game() {
                             : "bg-card border-muted-foreground/30 opacity-60 cursor-not-allowed"
                       )}
                         onClick={() => !hasPicked && !isRoundOver && 
-                          pickNumber(gameState.currentRound.id, gameState.currentRound.displayedNumbers[0])}
+                          pickNumber(gameState.currentRound.id, currentNumber?.number)}
                       >
                         <span className={cn(
                           "text-6xl font-bold",
                           isRoundOver ? "text-green-600" : hasPicked && "text-muted-foreground"
                         )}>
-                          {isRoundOver ? winningNumber : gameState.currentRound.displayedNumbers[0]}
+                          {isRoundOver ? winningNumber : currentNumber?.number}
                         </span>
                       </div>
                       {/* Show different messages based on game state */}

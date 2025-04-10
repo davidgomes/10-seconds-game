@@ -15,6 +15,12 @@ export const rounds = pgTable("rounds", {
   winningNumber: integer("winning_number"),
 });
 
+export const roundNumbers = pgTable("round_numbers", {
+  roundId: integer("round_id").notNull().references(() => rounds.id),
+  number: integer("number").notNull(),
+  displayIndex: integer("display_index").notNull(),
+});
+
 export const picks = pgTable("picks", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -38,7 +44,6 @@ export interface RoundState {
   active: boolean;
   startTime: Date;
   endTime: Date | null;
-  numbers: number[];
   displayedNumbers: number[];
   picks: UserPick[];
   winner: string | null;
@@ -63,6 +68,12 @@ export interface GameState {
   currentRound: RoundState;
   players: Player[];
   roundHistory: RoundState[];
+}
+
+export interface RoundNumber {
+  roundId: number;
+  number: number;
+  displayIndex: number;
 }
 
 // WebSocket message types

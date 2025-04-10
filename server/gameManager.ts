@@ -226,22 +226,12 @@ export class GameManager {
         winningNumber: null
       });
 
-      // Generate 10 random numbers between 1 and 100, that are all different
-      const numbers: number[] = [];
-      while (numbers.length < 10) {
-        const number = Math.ceil((-Math.log(Math.random()) / 10) * 100);
-        if (!numbers.includes(number)) {
-          numbers.push(number);
-        }
-      }
-
       // Initialize the round state
       this.currentRound = {
         id: round.id,
         active: true,
         startTime,
         endTime: null,
-        numbers,
         displayedNumbers: [],
         picks: [],
         winner: null,
@@ -276,8 +266,8 @@ export class GameManager {
     let numberIndex = 0;
     
     // Reveal numbers one by one
-    this.numberRevealTimer = setInterval(() => {
-      if (!this.currentRound || numberIndex >= this.currentRound.numbers.length) {
+    this.numberRevealTimer = setInterval(async () => {
+      if (!this.currentRound || numberIndex >= 10) {
         if (this.numberRevealTimer) {
           clearInterval(this.numberRevealTimer);
           this.numberRevealTimer = null;
@@ -285,23 +275,22 @@ export class GameManager {
         return;
       }
 
-      const number = this.currentRound.numbers[numberIndex];
-      this.currentRound.displayedNumbers.push(number);
+      // const number = this.currentRound.numbers[numberIndex];
       
-      // Broadcast the newly revealed number
-      this.broadcastToAll({
-        type: "numberRevealed",
-        data: {
-          roundId: this.currentRound.id,
-          number,
-          displayIndex: numberIndex
+      let number;
+      while (true) {
+        number = Math.ceil((-Math.log(Math.random()) / 10) * 100);
+        if (!this.currentRound.displayedNumbers.includes(number)) {
+          await storage.updateRoundNumber(this.currentRound.id, number, numberIndex);
+          this.currentRound.displayedNumbers.push(number);
+          break;
         }
-      });
-
+      }
+      
       numberIndex++;
       
       // If all numbers have been revealed, clear the interval
-      if (numberIndex >= this.currentRound.numbers.length) {
+      if (numberIndex >= 10) {
         if (this.numberRevealTimer) {
           clearInterval(this.numberRevealTimer);
           this.numberRevealTimer = null;
@@ -428,7 +417,6 @@ export class GameManager {
           active: false,
           startTime: new Date(),
           endTime: null,
-          numbers: [],
           displayedNumbers: [],
           picks: [],
           winner: null,
@@ -437,6 +425,8 @@ export class GameManager {
         players: updatedLeaderboard,
         roundHistory: roundStates
       };
+      
+      console.log("sending gameState", gameState.currentRound);
       
       // Send the game state to the client
       this.sendToClient(socket, { type: "gameState", data: gameState });

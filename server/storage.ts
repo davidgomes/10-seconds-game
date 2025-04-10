@@ -1,6 +1,7 @@
 import {
   users,
   rounds,
+  roundNumbers,
   picks,
   type User,
   type InsertUser,
@@ -8,6 +9,7 @@ import {
   type Pick,
   type Player,
   type RoundState,
+  type RoundNumber,
   type UserPick,
   insertRoundSchema,
   insertPickSchema
@@ -104,6 +106,15 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedRound;
+  }
+
+  async updateRoundNumber(id: number, number: number, displayIndex: number): Promise<RoundNumber | undefined> {
+    const [updatedRoundNumber] = await db
+      .insert(roundNumbers)
+      .values({ roundId: id, number, displayIndex })
+      .returning();
+    
+    return updatedRoundNumber;
   }
 
   async getRoundHistory(limit: number): Promise<Round[]> {
