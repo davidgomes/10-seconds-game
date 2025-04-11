@@ -11,12 +11,10 @@ import { ROUND_DURATION_SECONDS, BETWEEN_ROUNDS_DURATION_SECONDS } from '@/conte
 import { useShape } from '@electric-sql/react';
 
 export default function Game() {
-  const { 
+  let { 
     gameState, 
     username, 
     userWins, 
-    hasPicked, 
-    userPick, 
     pickNumber,
     logout,
     timeLeft,
@@ -54,15 +52,48 @@ export default function Game() {
     }
   });
   
-  // find the current number to display from `data`
-  const currentRoundNumbers = roundNumbers?.filter(item => item.round_id === gameState?.currentRound.id).sort((a, b) => a.displayIndex - b.displayIndex);
+  const { data: rounds } = useShape<{
+    id: number;
+    start_time: string;
+    winner_user_id: number | null;
+    winning_number: number | null;
+    end_time: string | null;
+  }>({
+    // url: `http://localhost:5006/api/shape`,
+    url: `https://api.electric-sql.cloud/v1/shape`,
+    params: {
+      table: `rounds`,
+      source_id: `d73f49ae-0d15-4738-b1d4-02d4ad91378e`,
+      source_secret: `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiJkNzNmNDlhZS0wZDE1LTQ3MzgtYjFkNC0wMmQ0YWQ5MTM3OGUiLCJpYXQiOjE3NDQzMTg2NDN9.AYDlrYgqo9Tk-1CoaQQ51OLRNGBZ9aLKeQHMPIYE3eA`,
+    }
+  });
+  
+  const currentRound = rounds?.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())[0];
+  
+  // find the current number to display from `roundNumbers`
+  const currentRoundNumbers = roundNumbers?.filter(item => item.round_id === currentRound.id).sort((a, b) => a.displayIndex - b.displayIndex);
   const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
-  
-  // console.log("currentNumber", currentNumber?.number);
-  // console.log("gameState.currentRound.displayedNumbers", gameState?.currentRound.displayedNumbers);
-  
+
+  const currentPlayer = gameState?.players.find(player => player.username === username);
+  const userPick = picks?.find(pick => pick.round_id === currentRound?.id && pick.user_id === currentPlayer?.id)?.number;
+  console.log("userPick", userPick, "currentRound.id", currentRound?.id, "currentPlayer", currentPlayer?.id);
+
   if (!gameState) return null;
+  if (!currentRound) return null;
   
+  gameState = {
+    currentRound: {
+      id: currentRound.id,
+      active: currentRound.end_time === null,
+      winner: currentRound.winner_user_id ? gameState.players.find(player => player.id === currentRound.winner_user_id)?.username || null : null,
+      winningNumber: currentRound.winning_number,
+      startTime: new Date(currentRound.start_time),
+      endTime: currentRound.end_time ? new Date(currentRound.end_time) : null,
+      displayedNumbers: currentRoundNumbers?.map(item => item.number) || []
+    },
+    players: gameState.players,
+  };
+
   const roundStatus = gameState.currentRound.active 
     ? "Picking phase" 
     : "Round ended";
@@ -134,7 +165,7 @@ export default function Game() {
               {/* Main game display area */}
               <div className="w-full flex flex-col items-center justify-center py-8">
                 {/* Message when round is active and user has picked */}
-                {gameState.currentRound.active && hasPicked && (
+                {gameState.currentRound.active && Boolean(userPick) && (
                   <p className="mb-4 text-muted-foreground text-sm">Waiting for the round to end...</p>
                 )}
                 
@@ -163,22 +194,22 @@ export default function Game() {
                         "border-2 w-32 h-32 rounded-xl flex items-center justify-center shadow-lg transition-colors",
                         isRoundOver
                           ? "bg-green-50 border-green-500"
-                          : !hasPicked
+                          : !Boolean(userPick)
                             ? "bg-card border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer"
                             : "bg-card border-muted-foreground/30 opacity-60 cursor-not-allowed"
                       )}
-                        onClick={() => !hasPicked && !isRoundOver && 
+                        onClick={() => !Boolean(userPick) && !isRoundOver && 
                           pickNumber(gameState.currentRound.id, currentNumber?.number)}
                       >
                         <span className={cn(
                           "text-6xl font-bold",
-                          isRoundOver ? "text-green-600" : hasPicked && "text-muted-foreground"
+                          isRoundOver ? "text-green-600" : Boolean(userPick) && "text-muted-foreground"
                         )}>
                           {isRoundOver ? winningNumber : currentNumber?.number}
                         </span>
                       </div>
                       {/* Show different messages based on game state */}
-                      {!hasPicked && !isRoundOver && (
+                      {!Boolean(userPick) && !isRoundOver && (
                         <p className="mt-3 text-sm">You must pick the last available number!</p>
                       )}
                     </div>
@@ -192,7 +223,7 @@ export default function Game() {
                   )}
                   
                   {/* User pick section - always rendered beside the current/winning number */}
-                  {(hasPicked || isRoundOver) && userPick !== null && (
+                  {(Boolean(userPick) || isRoundOver) && userPick !== null && (
                     <div className="flex flex-col items-center">
                       <p className="text-sm text-muted-foreground mb-2">You Picked</p>
                       <div className={cn(

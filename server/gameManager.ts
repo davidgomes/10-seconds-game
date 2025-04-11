@@ -315,7 +315,8 @@ export class GameManager {
         const sortedPicks = [...picks].sort((a, b) => b.number - a.number);
         const winningPick = sortedPicks[0];
         
-        const user = await storage.getUserByUsername(winningPick.userId.toString());
+        console.log("winningPick", winningPick);
+        const user = await storage.getUser(winningPick.userId);
         
         if (!user) {
           throw new Error("User not found for pick");

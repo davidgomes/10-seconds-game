@@ -28,6 +28,7 @@ export function useWebSocket(): WebSocketHook {
     };
 
     socket.onmessage = (event) => {
+      return;
       try {
         const message = JSON.parse(event.data) as ServerMessage;
         setLastMessage(message);

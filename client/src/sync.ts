@@ -139,8 +139,6 @@ export default class ChangeLogSynchronizer {
 
     let response: Response | undefined
     try {
-        console.log('transactions', transactions);
-        
         response = await api.request(path, 'POST', transactions, signal)
     } catch (_err) {
       return 'retry'

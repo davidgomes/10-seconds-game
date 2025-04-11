@@ -67,7 +67,6 @@ export interface Player {
 export interface GameState {
   currentRound: RoundState;
   players: Player[];
-  roundHistory: RoundState[];
 }
 
 export interface RoundNumber {

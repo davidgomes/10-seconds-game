@@ -6,6 +6,7 @@ import { getUsername, setUsername as setUsernameApi, logout as logoutApi } from 
 import { useLoading } from './LoadingContext';
 import { v4 as uuidv4 } from 'uuid'
 import { usePGlite } from '@electric-sql/pglite-react';
+import { useShape } from '@electric-sql/react';
 
 // Constants for timing
 export const ROUND_DURATION_SECONDS = 10;
@@ -37,7 +38,6 @@ const initialGameState: GameState = {
     winningNumber: null
   },
   players: [],
-  roundHistory: []
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -60,6 +60,36 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const db = usePGlite()
   
+  const { data: users } = useShape<{
+    id: number;
+    username: string;
+  }>({
+    url: `https://api.electric-sql.cloud/v1/shape`,
+    params: {
+      table: `users`,
+      source_id: `d73f49ae-0d15-4738-b1d4-02d4ad91378e`,
+      source_secret: `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiJkNzNmNDlhZS0wZDE1LTQ3MzgtYjFkNC0wMmQ0YWQ5MTM3OGUiLCJpYXQiOjE3NDQzMTg2NDN9.AYDlrYgqo9Tk-1CoaQQ51OLRNGBZ9aLKeQHMPIYE3eA`,
+    }
+  });
+  
+  const players = users?.map(user => ({
+    id: user.id,
+    username: user.username,
+    wins: 0,
+    roundsPlayed: 0,
+    connected: false,
+    participating: false
+  }));
+  
+  useEffect(() => {
+    if (players) {
+      setGameState(prev => ({
+        ...prev,
+        players
+      }));
+    }
+  }, [users]);
+
   // Check if user is already logged in from cookie
   useEffect(() => {
     const checkStoredUsername = async () => {
@@ -69,6 +99,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         if (storedUsername) {
           setUsername(storedUsername);
           setIsLoggedIn(true);
+          setLoading(false);
           // Don't send message here - we'll handle it in a separate effect
         } else {
           // If no username is found, ensure we're in a logged out state
@@ -174,16 +205,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
           if (!prev) return prev;
           
           // Add the ended round to history
-          const updatedHistory = [lastMessage.data, ...prev.roundHistory].slice(0, 10);
+          // const updatedHistory = [lastMessage.data, ...prev.roundHistory].slice(0, 10);
           
           return {
             ...prev,
             currentRound: lastMessage.data,
-            roundHistory: updatedHistory
+            // roundHistory: updatedHistory
           };
         });
         break;
-      case 'playerJoined':
+      /*case 'playerJoined':
       case 'playerLeft':
         // Update players list when a player joins or leaves
         setGameState(prev => {
@@ -214,7 +245,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
             ...prev,
             players: updatedPlayers
           };
-        });
+        });*/
         break;
       case 'numberPicked':
         if (lastMessage.data.roundId === gameState.currentRound.id) {
@@ -380,21 +411,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-
-    if (hasPicked) {
-      toast({
-        title: 'Error',
-        description: 'You have already picked a number for this round',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // All users can participate now
-    /*sendMessage({
-      type: 'pickNumber',
-      data: { roundId, number }
-    });*/
     
     const currentPlayer = gameState?.players.find(p => p.username === username);
     if (!currentPlayer) {
@@ -426,8 +442,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     
       setHasPicked(true);
       setUserPick(number);
-      
-      console.log("all picks", await db.sql`SELECT * FROM picks`);
     } catch (error) {
       // Handle the error from the server
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
