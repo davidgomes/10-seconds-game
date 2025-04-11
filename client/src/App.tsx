@@ -9,6 +9,16 @@ import { GameProvider, useGame } from "@/context/GameContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { LoadingProvider, useLoading } from "@/context/LoadingContext";
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
+import { useEffect } from "react";
+import { useState } from "react";
+import {
+  PGliteProvider,
+  useLiveQuery,
+  usePGlite,
+} from '@electric-sql/pglite-react'
+import { type PGliteWithLive } from '@electric-sql/pglite/live'
+import { loadPGlite } from './db';
+import ChangeLogSynchronizer from "@/sync";
 
 function ProtectedRouteWithProviders({ component: Component }: { component: React.ComponentType }) {
   const { isLoggedIn } = useGame();
@@ -26,26 +36,63 @@ function ProtectedRouteWithProviders({ component: Component }: { component: Reac
 }
 
 function AppRoutes() {
+  const [db, setDb] = useState<PGliteWithLive>()
+
+  useEffect(() => {
+    let isMounted = true
+    let writePathSync: ChangeLogSynchronizer
+
+    async function init() {
+      const pglite = await loadPGlite()
+
+      if (!isMounted) {
+        return
+      }
+
+      writePathSync = new ChangeLogSynchronizer(pglite)
+      writePathSync.start()
+
+      setDb(pglite)
+    }
+
+    init()
+
+    return () => {
+      isMounted = false
+
+      // if (writePathSync !== undefined) {
+        // writePathSync.stop()
+      // }
+    }
+  }, []);
+
+  if (!db) {
+    return null;
+  }
+  
   return (
-    <GameProvider>
-      <Switch>
-        <Route path="/" component={() => <ProtectedRouteWithProviders component={Game} />} />
+    <PGliteProvider db={db}>
+      <GameProvider>
+        <Switch>
+          <Route path="/" component={() => <ProtectedRouteWithProviders component={Game} />} />
         <Route component={NotFound} />
-      </Switch>
-      <Toaster />
-    </GameProvider>
+        </Switch>
+        <Toaster />
+      </GameProvider>
+    </PGliteProvider>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      
       <ThemeProvider>
         <LoadingProvider>
           <GlobalLoadingIndicator />
           <AppRoutes />
-        </LoadingProvider>
-      </ThemeProvider>
+          </LoadingProvider>
+        </ThemeProvider>
     </QueryClientProvider>
   );
 }

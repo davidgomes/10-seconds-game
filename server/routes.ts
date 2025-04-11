@@ -4,6 +4,9 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { gameManager } from "./gameManager";
 import { getThemeFromCookie, setThemeCookie, clearThemeCookie, getUsernameFromCookie, setUsernameCookie, clearUsernameCookie } from "./cookie-utils";
+import { v4 as uuidv4 } from 'uuid';
+import { type Change, type Transaction } from "@shared/types";
+import { type RoundNumber } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -70,6 +73,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
       res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    }
+  });
+
+  // Handle changes from the client
+  app.post('/changes', async (req, res) => {
+    // TODO: check auth
+    
+    try {
+      const transactions: Transaction[] = req.body;
+      
+      if (!Array.isArray(transactions)) {
+        return res.status(400).json({ error: 'Invalid request body. Expected an array of transactions.' });
+      }
+      
+      // Process each transaction
+      for (const transaction of transactions) {
+        if (!transaction.id || !Array.isArray(transaction.changes)) {
+          return res.status(400).json({ error: 'Invalid transaction format.' });
+        }
+        
+        // Process each change in the transaction
+        for (const change of transaction.changes) {
+          // Only process insert operations for picks
+          if (change.operation === 'insert' && change.value) {
+            const { id, user_id, round_id, number, timestamp } = change.value;
+            
+            // Validate required fields
+            if (!id || user_id === undefined || round_id === undefined || number === undefined || !timestamp) {
+              console.warn('Skipping invalid pick data:', change.value);
+              continue;
+            }
+
+            // Validate that the user exists
+            const user = await storage.getUser(user_id);
+            if (!user) {
+              return res.status(400).json({ error: 'Invalid user' });
+            }
+
+            // Validate that this is the current round
+            const currentRound = await storage.getCurrentRound();
+            if (!currentRound || currentRound.id !== round_id || currentRound.endTime !== null) {
+              return res.status(400).json({ error: 'Invalid round or round is not active' });
+            }
+
+            // Get all round numbers to validate the pick
+            const roundNumbers = await storage.getRoundNumbers(round_id);
+            if (!roundNumbers.some((rn: RoundNumber) => rn.number === number)) {
+              return res.status(400).json({ error: 'Invalid number selection' });
+            }
+
+            // Check if user already picked in this round
+            const existingPick = await storage.getUserPickForRound(user_id, round_id);
+            if (existingPick) {
+              return res.status(400).json({ error: 'Already picked a number in this round' });
+            }
+            
+            // Create the pick in the database
+            await storage.createPick({
+              userId: user_id,
+              roundId: round_id,
+              number,
+              timestamp: new Date(timestamp),
+              writeId: change.write_id
+            }, id);
+          }
+        }
+      }
+      
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error('Error processing changes:', error);
+      res.status(500).json({ error: 'Failed to process changes' });
     }
   });
 

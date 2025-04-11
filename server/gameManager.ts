@@ -10,6 +10,7 @@ import {
   type Player,
   type UserPick
 } from "@shared/schema";
+import { v4 as uuidv4 } from "uuid";
 
 // Connection tracking
 interface Connection {
@@ -158,7 +159,8 @@ export class GameManager {
         userId: connection.userId,
         roundId: this.currentRound.id,
         number: data.number,
-        timestamp: new Date()
+        timestamp: new Date(),
+        writeId: uuidv4()
       });
 
       // Update the current round state
@@ -167,7 +169,7 @@ export class GameManager {
         number: data.number
       };
       
-      this.currentRound.picks.push(userPick);
+      // this.currentRound.picks.push(userPick);
 
       // Notify all clients about the pick
       this.broadcastToAll({
@@ -226,24 +228,13 @@ export class GameManager {
         winningNumber: null
       });
 
-      // Generate 10 random numbers between 1 and 100, that are all different
-      const numbers: number[] = [];
-      while (numbers.length < 10) {
-        const number = Math.ceil((-Math.log(Math.random()) / 10) * 100);
-        if (!numbers.includes(number)) {
-          numbers.push(number);
-        }
-      }
-
       // Initialize the round state
       this.currentRound = {
         id: round.id,
         active: true,
         startTime,
         endTime: null,
-        numbers,
         displayedNumbers: [],
-        picks: [],
         winner: null,
         winningNumber: null
       };
@@ -276,8 +267,8 @@ export class GameManager {
     let numberIndex = 0;
     
     // Reveal numbers one by one
-    this.numberRevealTimer = setInterval(() => {
-      if (!this.currentRound || numberIndex >= this.currentRound.numbers.length) {
+    this.numberRevealTimer = setInterval(async () => {
+      if (!this.currentRound || numberIndex >= 10) {
         if (this.numberRevealTimer) {
           clearInterval(this.numberRevealTimer);
           this.numberRevealTimer = null;
@@ -285,23 +276,22 @@ export class GameManager {
         return;
       }
 
-      const number = this.currentRound.numbers[numberIndex];
-      this.currentRound.displayedNumbers.push(number);
+      // const number = this.currentRound.numbers[numberIndex];
       
-      // Broadcast the newly revealed number
-      this.broadcastToAll({
-        type: "numberRevealed",
-        data: {
-          roundId: this.currentRound.id,
-          number,
-          displayIndex: numberIndex
+      let number;
+      while (true) {
+        number = Math.ceil((-Math.log(Math.random()) / 10) * 100);
+        if (!this.currentRound.displayedNumbers.includes(number)) {
+          await storage.updateRoundNumber(this.currentRound.id, number, numberIndex);
+          this.currentRound.displayedNumbers.push(number);
+          break;
         }
-      });
-
+      }
+      
       numberIndex++;
       
       // If all numbers have been revealed, clear the interval
-      if (numberIndex >= this.currentRound.numbers.length) {
+      if (numberIndex >= 10) {
         if (this.numberRevealTimer) {
           clearInterval(this.numberRevealTimer);
           this.numberRevealTimer = null;
@@ -318,27 +308,32 @@ export class GameManager {
     this.currentRound.endTime = new Date();
 
     try {
-      // Determine the winner
-      if (this.currentRound.picks.length > 0) {
+      // Determine the winner from the database
+      const picks = await storage.getPicksByRound(this.currentRound.id);
+      if (picks.length > 0) {
         // Sort picks by number (descending)
-        const sortedPicks = [...this.currentRound.picks].sort((a, b) => b.number - a.number);
+        const sortedPicks = [...picks].sort((a, b) => b.number - a.number);
         const winningPick = sortedPicks[0];
         
-        this.currentRound.winner = winningPick.username;
+        console.log("winningPick", winningPick);
+        const user = await storage.getUser(winningPick.userId);
+        
+        if (!user) {
+          throw new Error("User not found for pick");
+        }
+
+        this.currentRound.winner = user.username;
         this.currentRound.winningNumber = winningPick.number;
 
         // Update the round in storage
-        const user = await storage.getUserByUsername(winningPick.username);
-        if (user) {
-          await storage.updateRound(this.currentRound.id, {
-            endTime: this.currentRound.endTime,
+        await storage.updateRound(this.currentRound.id, {
+          endTime: this.currentRound.endTime,
             winnerUserId: user.id,
             winningNumber: winningPick.number
           });
           
-          // Log the winner for debugging
-          console.log(`Round ${this.currentRound.id} won by ${user.username} (ID: ${user.id}) with number ${winningPick.number}`);
-        }
+        // Log the winner for debugging
+        console.log(`Round ${this.currentRound.id} won by ${user.username} (ID: ${user.id}) with number ${winningPick.number}`);
       } else {
         // No picks in this round
         await storage.updateRound(this.currentRound.id, {
@@ -428,7 +423,6 @@ export class GameManager {
           active: false,
           startTime: new Date(),
           endTime: null,
-          numbers: [],
           displayedNumbers: [],
           picks: [],
           winner: null,
@@ -437,6 +431,8 @@ export class GameManager {
         players: updatedLeaderboard,
         roundHistory: roundStates
       };
+      
+      console.log("sending gameState", gameState.currentRound);
       
       // Send the game state to the client
       this.sendToClient(socket, { type: "gameState", data: gameState });
