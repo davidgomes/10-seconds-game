@@ -423,22 +423,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }  
 
     try {
-      await db.sql`
-      INSERT INTO picks (
-        id,
-        user_id,
-        round_id,
-        number,
-        timestamp
+      await db.exec(
+        `INSERT INTO picks (
+          id,
+          user_id,
+          round_id,
+          number,
+          timestamp
       )
       VALUES (
-        ${uuidv4()},
+        gen_random_uuid(),
         ${currentPlayer.id},
         ${roundId},
         ${number},
-        ${new Date()}
+        NOW()
       )
-    `;
+    `);
     
     console.log(`picked number ${number} for round ${roundId}`);
     
@@ -447,7 +447,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       // Handle the error from the server
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+      console.log("errorMessage", errorMessage);
       if (errorMessage.includes('last available number')) {
         toast({
           title: 'Error',

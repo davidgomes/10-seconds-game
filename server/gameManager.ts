@@ -61,6 +61,7 @@ export class GameManager {
   }
 
   private async handleClientMessage(socket: WebSocket, message: ClientMessage) {
+    return;
     const connection = this.connections.get(socket);
     if (!connection) return;
 
@@ -181,7 +182,7 @@ export class GameManager {
       });
     } catch (error) {
       console.error("Error picking number:", error);
-      this.sendToClient(socket, { type: "error", error: "Failed to pick number" });
+      // this.sendToClient(socket, { type: "error", error: "Failed to pick number" });
     }
   }
 

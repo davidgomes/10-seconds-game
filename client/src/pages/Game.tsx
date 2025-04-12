@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useGame } from '@/context/GameContext';
 import { GameTabs } from '@/components/GameTabs';
 import { ThemePicker } from '@/components/ThemePicker';
@@ -10,7 +10,7 @@ import Confetti from 'react-confetti';
 import { ROUND_DURATION_SECONDS, BETWEEN_ROUNDS_DURATION_SECONDS } from '@/context/GameContext';
 import { useShape } from '@electric-sql/react';
 import { VITE_ELECTRIC_SOURCE_ID, VITE_ELECTRIC_SOURCE_SECRET } from '@/constants';
-import { useLiveQuery, usePGlite } from '@electric-sql/pglite-react';
+import { useLiveIncrementalQuery, useLiveQuery, usePGlite } from '@electric-sql/pglite-react';
 
 export default function Game() {
   let { 
@@ -36,6 +36,38 @@ export default function Game() {
       source_secret: VITE_ELECTRIC_SOURCE_SECRET,
     }
   });
+
+  const db = usePGlite();
+  useEffect(() => {
+    // Check if our interval already exists in the global window object
+    if (!window.myGlobalInterval) {
+      console.log('Setting up interval for the first time');
+      
+      // Function to run on each interval
+      const runIntervalFunction = async () => {
+        const picksCount = await db.exec(`
+          SELECT COUNT(*) FROM picks
+          WHERE user_id = 1
+        `);
+        console.log("THE PICKS COUNT IS ", picksCount[0].rows[0].count);
+      };
+      
+      // Create the interval and store the ID globally
+      window.myGlobalInterval = setInterval(runIntervalFunction, 2500);
+      
+      // Run once immediately to avoid waiting for the first interval
+      runIntervalFunction();
+    } else {
+      console.log('Interval already exists, not creating a new one');
+    }
+    
+    // Cleanup function - but we only want to clear if the app is truly shutting down,
+    // not when this component unmounts
+    return () => {
+      // We intentionally do NOT clear the interval here
+      console.log('Component unmounted, but interval continues');
+    };
+  }, []); // Empty dependency array ensures this runs only once
   
   const { data: picks } = useShape<{
     id: number;
@@ -74,47 +106,27 @@ export default function Game() {
   const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
 
   const currentPlayer = gameState?.players.find(player => player.username === username);
-  
-  // Use a more robust approach for the live query
-  const [queryKey, setQueryKey] = React.useState(0);
-  
-  // Force query refresh when round or player changes
-  React.useEffect(() => {
-    setQueryKey(prev => prev + 1);
-  }, [currentPlayer?.id, currentRound?.id]);
+  // const userPick = picks?.find(pick => pick.round_id === currentRound?.id && pick.user_id === currentPlayer?.id)?.number;
   
   const userPickResult = useLiveQuery<{number: number}>(
-    `SELECT number FROM picks WHERE user_id = $1 AND round_id = $2 ORDER BY timestamp DESC LIMIT 1`,
+    `SELECT number FROM picks WHERE user_id = $1 AND round_id = $2`,
     [currentPlayer?.id ?? null, currentRound?.id ?? null]
   );
-  
   console.log("userPickResult", userPickResult, "currentPlayer?.id ?? null", currentPlayer?.id ?? null, "currentRound?.id ?? null", currentRound?.id ?? null);
   
-  // Add a direct query as a fallback
-  const db = usePGlite();
-  const [directQueryResult, setDirectQueryResult] = React.useState<number | null>(null);
+  const numUserPicks = useLiveQuery<{count: number}>(
+    `SELECT COUNT(*) FROM picks WHERE user_id = $1`,
+    [currentPlayer?.id ?? null]
+  );
+  console.log("numUserPicks", numUserPicks?.rows[0].count);
   
-  React.useEffect(() => {
-    const fetchUserPick = async () => {
-      if (!currentPlayer?.id || !currentRound?.id) return;
-      
-      try {
-        const result = await db.sql<{number: number}>`
-          SELECT number FROM picks WHERE user_id = ${currentPlayer.id} AND round_id = ${currentRound.id} ORDER BY timestamp DESC LIMIT 1
-        `;
-        
-        console.log("Direct query result:", result);
-        setDirectQueryResult(result.rows[0]?.number ?? null);
-      } catch (error) {
-        console.error("Error fetching user pick:", error);
-      }
-    };
-    
-    fetchUserPick();
-  }, [currentPlayer?.id, currentRound?.id, db]);
+  const allUserPicks = useLiveQuery<{round_id: number, number: number}>(
+    `SELECT round_id, number FROM picks WHERE user_id = $1`,
+    [currentPlayer?.id ?? null]
+  );
+  console.log("allUserPicks", allUserPicks);
   
-  // Use the direct query result if the live query is not working
-  const userPick: number | null = userPickResult?.rows[0]?.number ?? directQueryResult ?? null;
+  const userPick: number | null = userPickResult?.rows[0]?.number ?? null;
 
   if (!gameState) return null;
   if (!currentRound) return null;

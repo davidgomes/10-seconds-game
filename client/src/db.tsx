@@ -4,7 +4,7 @@ import { electricSync } from '@electric-sql/pglite-sync'
 
 import localSchemaMigrations from './local-schema.sql?raw'
 
-const DATA_DIR = 'idb://local-db-4'
+const DATA_DIR = 'idb://local-db-5'
 
 const registry = new Map<string, Promise<PGliteWithLive>>()
 
