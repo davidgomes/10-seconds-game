@@ -66,53 +66,9 @@ export class GameManager {
     if (!connection) return;
 
     switch (message.type) {
-      case "join":
-        await this.handleJoin(socket, connection, message.username);
-        break;
       case "pickNumber":
         await this.handlePickNumber(socket, connection, message.data);
         break;
-    }
-  }
-
-  private async handleJoin(socket: WebSocket, connection: Connection, username: string) {
-    if (connection.userId) {
-      this.sendToClient(socket, { type: "error", error: "Already joined" });
-      return;
-    }
-
-    try {
-      // Check if user exists, otherwise create
-      let user = await storage.getUserByUsername(username);
-      if (!user) {
-        user = await storage.createUser({ username });
-      }
-
-      // Update connection
-      connection.userId = user.id;
-      connection.username = user.username;
-
-      // All users can participate in any round
-      connection.participating = true;
-
-      // Notify all clients about the new player
-      const stats = await storage.getPlayerStats(user.id);
-      const newPlayer: Player = {
-        id: user.id,
-        username: user.username,
-        wins: stats.wins,
-        roundsPlayed: stats.roundsPlayed,
-        connected: true,
-        participating: connection.participating
-      };
-
-      this.broadcastToAll({ type: "playerJoined", data: newPlayer });
-
-      // Send the current game state to the user
-      this.sendGameState(socket);
-    } catch (error) {
-      console.error("Error joining game:", error);
-      this.sendToClient(socket, { type: "error", error: "Failed to join game" });
     }
   }
 
