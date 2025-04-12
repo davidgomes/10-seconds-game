@@ -1,7 +1,14 @@
+interface UserResponse {
+  username: string | null;
+  userId?: number;
+  wins?: number;
+  roundsPlayed?: number;
+}
+
 /**
  * Get the current username from the server
  */
-export async function getUsername(): Promise<string | null> {
+export async function getUsername(): Promise<UserResponse> {
   try {
     const response = await fetch('/api/username');
     
@@ -10,10 +17,10 @@ export async function getUsername(): Promise<string | null> {
     }
     
     const data = await response.json();
-    return data.username || null;
+    return data;
   } catch (error) {
     console.error('Error fetching username:', error);
-    return null; // Default to null to indicate no user is signed in
+    return { username: null }; // Default to null to indicate no user is signed in
   }
 }
 

@@ -191,10 +191,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Username API endpoints
   
   // Get current username
-  app.get('/api/username', (req, res) => {
+  app.get('/api/username', async (req, res) => {
     try {
       const username = getUsernameFromCookie(req);
-      res.json({ username: username || null });
+      if (!username) {
+        res.json({ username: null });
+        return;
+      }
+
+      // Check if user exists, otherwise create
+      let user = await storage.getUserByUsername(username);
+      if (!user) {
+        user = await storage.createUser({ username });
+      }
+
+      // Get user stats
+      const stats = await storage.getPlayerStats(user.id);
+      
+      res.json({ 
+        username: user.username,
+        userId: user.id,
+        wins: stats.wins,
+        roundsPlayed: stats.roundsPlayed
+      });
     } catch (error) {
       console.error('Error fetching username:', error);
       res.status(500).json({ error: 'Failed to fetch username' });
