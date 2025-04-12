@@ -74,28 +74,47 @@ export default function Game() {
   const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
 
   const currentPlayer = gameState?.players.find(player => player.username === username);
-  // const userPick = picks?.find(pick => pick.round_id === currentRound?.id && pick.user_id === currentPlayer?.id)?.number;
   
-  const userPickResult = useLiveQuery(
-    `SELECT number FROM picks WHERE user_id = $1 AND round_id = $2`,
+  // Use a more robust approach for the live query
+  const [queryKey, setQueryKey] = React.useState(0);
+  
+  // Force query refresh when round or player changes
+  React.useEffect(() => {
+    setQueryKey(prev => prev + 1);
+  }, [currentPlayer?.id, currentRound?.id]);
+  
+  const userPickResult = useLiveQuery<{number: number}>(
+    `SELECT number FROM picks WHERE user_id = $1 AND round_id = $2 ORDER BY timestamp DESC LIMIT 1`,
     [currentPlayer?.id ?? null, currentRound?.id ?? null]
   );
+  
   console.log("userPickResult", userPickResult, "currentPlayer?.id ?? null", currentPlayer?.id ?? null, "currentRound?.id ?? null", currentRound?.id ?? null);
   
+  // Add a direct query as a fallback
   const db = usePGlite();
+  const [directQueryResult, setDirectQueryResult] = React.useState<number | null>(null);
   
   React.useEffect(() => {
     const fetchUserPick = async () => {
-      const userPick = await db.sql<{
-        number: number;
-    }>`SELECT number FROM picks WHERE user_id = ${currentPlayer?.id} AND round_id = ${currentRound?.id}`;
-      console.log("userPick", userPick);
+      if (!currentPlayer?.id || !currentRound?.id) return;
+      
+      try {
+        const result = await db.sql<{number: number}>`
+          SELECT number FROM picks WHERE user_id = ${currentPlayer.id} AND round_id = ${currentRound.id} ORDER BY timestamp DESC LIMIT 1
+        `;
+        
+        console.log("Direct query result:", result);
+        setDirectQueryResult(result.rows[0]?.number ?? null);
+      } catch (error) {
+        console.error("Error fetching user pick:", error);
+      }
     };
-
+    
     fetchUserPick();
-  }, [currentPlayer?.id, currentRound?.id]);
-
-  const userPick = userPickResult?.rows[0]?.number ?? null;
+  }, [currentPlayer?.id, currentRound?.id, db]);
+  
+  // Use the direct query result if the live query is not working
+  const userPick: number | null = userPickResult?.rows[0]?.number ?? directQueryResult ?? null;
 
   if (!gameState) return null;
   if (!currentRound) return null;
