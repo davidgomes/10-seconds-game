@@ -36,53 +36,6 @@ export default function Game() {
       source_secret: VITE_ELECTRIC_SOURCE_SECRET,
     }
   });
-
-  const db = usePGlite();
-  useEffect(() => {
-    // Check if our interval already exists in the global window object
-    if (!window.myGlobalInterval) {
-      console.log('Setting up interval for the first time');
-      
-      // Function to run on each interval
-      const runIntervalFunction = async () => {
-        const picksCount = await db.exec(`
-          SELECT COUNT(*) FROM picks
-          WHERE user_id = 1
-        `);
-        console.log("THE PICKS COUNT IS ", picksCount[0].rows[0].count);
-      };
-      
-      // Create the interval and store the ID globally
-      window.myGlobalInterval = setInterval(runIntervalFunction, 2500);
-      
-      // Run once immediately to avoid waiting for the first interval
-      runIntervalFunction();
-    } else {
-      console.log('Interval already exists, not creating a new one');
-    }
-    
-    // Cleanup function - but we only want to clear if the app is truly shutting down,
-    // not when this component unmounts
-    return () => {
-      // We intentionally do NOT clear the interval here
-      console.log('Component unmounted, but interval continues');
-    };
-  }, []); // Empty dependency array ensures this runs only once
-  
-  const { data: picks } = useShape<{
-    id: number;
-    user_id: number;
-    round_id: number;
-    number: number;
-    timestamp: string;
-  }>({
-    url: `https://api.electric-sql.cloud/v1/shape`,
-    params: {
-      table: `picks`,
-      source_id: VITE_ELECTRIC_SOURCE_ID,
-      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
-    }
-  });
   
   const { data: rounds } = useShape<{
     id: number;
@@ -106,7 +59,6 @@ export default function Game() {
   const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
 
   const currentPlayer = gameState?.players.find(player => player.username === username);
-  // const userPick = picks?.find(pick => pick.round_id === currentRound?.id && pick.user_id === currentPlayer?.id)?.number;
   
   const userPickResult = useLiveQuery<{number: number}>(
     `SELECT number FROM picks WHERE user_id = $1 AND round_id = $2`,
