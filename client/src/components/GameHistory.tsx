@@ -1,7 +1,7 @@
 import React from 'react';
 import { useGame } from '@/context/GameContext';
 import { useShape } from '@electric-sql/react';
-
+import { VITE_ELECTRIC_SOURCE_ID, VITE_ELECTRIC_SOURCE_SECRET } from '@/constants';
 export function GameHistory() {
   const { gameState } = useGame();
   
@@ -31,12 +31,11 @@ export function GameHistory() {
     winning_number: number | null;
     end_time: string | null;
   }>({
-    // url: `http://localhost:5006/api/shape`,
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
       table: `rounds`,
-      source_id: `d73f49ae-0d15-4738-b1d4-02d4ad91378e`,
-      source_secret: `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiJkNzNmNDlhZS0wZDE1LTQ3MzgtYjFkNC0wMmQ0YWQ5MTM3OGUiLCJpYXQiOjE3NDQzMTg2NDN9.AYDlrYgqo9Tk-1CoaQQ51OLRNGBZ9aLKeQHMPIYE3eA`,
+      source_id: VITE_ELECTRIC_SOURCE_ID,
+      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
     }
   });
 

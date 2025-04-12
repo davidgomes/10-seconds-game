@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import Confetti from 'react-confetti';
 import { ROUND_DURATION_SECONDS, BETWEEN_ROUNDS_DURATION_SECONDS } from '@/context/GameContext';
 import { useShape } from '@electric-sql/react';
+import { VITE_ELECTRIC_SOURCE_ID, VITE_ELECTRIC_SOURCE_SECRET } from '@/constants';
+import { useLiveQuery, usePGlite } from '@electric-sql/pglite-react';
 
 export default function Game() {
   let { 
@@ -27,12 +29,11 @@ export default function Game() {
     number: number;
     round_id: number;
   }>({
-    // url: `http://localhost:5006/api/shape`,
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
       table: `round_numbers`,
-      source_id: `d73f49ae-0d15-4738-b1d4-02d4ad91378e`,
-      source_secret: `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiJkNzNmNDlhZS0wZDE1LTQ3MzgtYjFkNC0wMmQ0YWQ5MTM3OGUiLCJpYXQiOjE3NDQzMTg2NDN9.AYDlrYgqo9Tk-1CoaQQ51OLRNGBZ9aLKeQHMPIYE3eA`,
+      source_id: VITE_ELECTRIC_SOURCE_ID,
+      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
     }
   });
   
@@ -43,12 +44,11 @@ export default function Game() {
     number: number;
     timestamp: string;
   }>({
-    // url: `http://localhost:5006/api/shape`,
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
       table: `picks`,
-      source_id: `d73f49ae-0d15-4738-b1d4-02d4ad91378e`,
-      source_secret: `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiJkNzNmNDlhZS0wZDE1LTQ3MzgtYjFkNC0wMmQ0YWQ5MTM3OGUiLCJpYXQiOjE3NDQzMTg2NDN9.AYDlrYgqo9Tk-1CoaQQ51OLRNGBZ9aLKeQHMPIYE3eA`,
+      source_id: VITE_ELECTRIC_SOURCE_ID,
+      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
     }
   });
   
@@ -59,12 +59,11 @@ export default function Game() {
     winning_number: number | null;
     end_time: string | null;
   }>({
-    // url: `http://localhost:5006/api/shape`,
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
       table: `rounds`,
-      source_id: `d73f49ae-0d15-4738-b1d4-02d4ad91378e`,
-      source_secret: `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiJkNzNmNDlhZS0wZDE1LTQ3MzgtYjFkNC0wMmQ0YWQ5MTM3OGUiLCJpYXQiOjE3NDQzMTg2NDN9.AYDlrYgqo9Tk-1CoaQQ51OLRNGBZ9aLKeQHMPIYE3eA`,
+      source_id: VITE_ELECTRIC_SOURCE_ID,
+      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
     }
   });
   
@@ -75,8 +74,28 @@ export default function Game() {
   const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
 
   const currentPlayer = gameState?.players.find(player => player.username === username);
-  const userPick = picks?.find(pick => pick.round_id === currentRound?.id && pick.user_id === currentPlayer?.id)?.number;
-  console.log("userPick", userPick, "currentRound.id", currentRound?.id, "currentPlayer", currentPlayer?.id);
+  // const userPick = picks?.find(pick => pick.round_id === currentRound?.id && pick.user_id === currentPlayer?.id)?.number;
+  
+  const userPickResult = useLiveQuery(
+    `SELECT number FROM picks WHERE user_id = $1 AND round_id = $2`,
+    [currentPlayer?.id ?? null, currentRound?.id ?? null]
+  );
+  console.log("userPickResult", userPickResult, "currentPlayer?.id ?? null", currentPlayer?.id ?? null, "currentRound?.id ?? null", currentRound?.id ?? null);
+  
+  const db = usePGlite();
+  
+  React.useEffect(() => {
+    const fetchUserPick = async () => {
+      const userPick = await db.sql<{
+        number: number;
+    }>`SELECT number FROM picks WHERE user_id = ${currentPlayer?.id} AND round_id = ${currentRound?.id}`;
+      console.log("userPick", userPick);
+    };
+
+    fetchUserPick();
+  }, [currentPlayer?.id, currentRound?.id]);
+
+  const userPick = userPickResult?.rows[0]?.number ?? null;
 
   if (!gameState) return null;
   if (!currentRound) return null;

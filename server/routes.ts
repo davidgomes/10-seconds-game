@@ -84,12 +84,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transactions: Transaction[] = req.body;
       
       if (!Array.isArray(transactions)) {
+        console.warn('Invalid request body. Expected an array of transactions.');
         return res.status(400).json({ error: 'Invalid request body. Expected an array of transactions.' });
       }
       
       // Process each transaction
       for (const transaction of transactions) {
         if (!transaction.id || !Array.isArray(transaction.changes)) {
+          console.warn('Invalid transaction format.');
           return res.status(400).json({ error: 'Invalid transaction format.' });
         }
         
@@ -108,6 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Validate that the user exists
             const user = await storage.getUser(user_id);
             if (!user) {
+              console.warn('Invalid user:', user_id);
               return res.status(400).json({ error: 'Invalid user' });
             }
 
