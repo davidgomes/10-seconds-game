@@ -1,11 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { gameManager } from "./gameManager";
 import { getThemeFromCookie, setThemeCookie, clearThemeCookie, getUsernameFromCookie, setUsernameCookie, clearUsernameCookie } from "./cookie-utils";
-import { v4 as uuidv4 } from 'uuid';
-import { type Change, type Transaction } from "@shared/types";
 import { type RoundNumber } from "@shared/schema";
+import { Transaction } from "@shared/types";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server

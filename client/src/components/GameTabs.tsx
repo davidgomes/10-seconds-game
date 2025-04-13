@@ -14,7 +14,7 @@ export function GameTabs() {
         </TabsList>
         
         <TabsContent value="leaderboard">
-          {/* <Leaderboard /> */}
+          <Leaderboard />
         </TabsContent>
         
         {/* <TabsContent value="history"> */}

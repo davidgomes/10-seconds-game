@@ -5,6 +5,4 @@ export type {
   UserPick,
   Player,
   GameState,
-  ServerMessage,
-  ClientMessage
 } from "@shared/schema";

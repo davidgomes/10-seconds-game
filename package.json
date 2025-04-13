@@ -9,6 +9,7 @@
     "dev-proxy": "bun --watch --env-file .env proxy/proxy.ts",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
+    "tsc-watch": "tsc --watch",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"

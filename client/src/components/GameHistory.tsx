@@ -2,6 +2,7 @@ import React from 'react';
 import { useGame } from '@/context/GameContext';
 import { useShape } from '@electric-sql/react';
 import { VITE_ELECTRIC_SOURCE_ID, VITE_ELECTRIC_SOURCE_SECRET } from '@/constants';
+
 export function GameHistory() {
   const { gameState } = useGame();
   
@@ -23,7 +24,7 @@ export function GameHistory() {
       return d.toLocaleDateString();
     }
   };
-  
+
   const { data: rounds } = useShape<{
     id: number;
     start_time: string;
@@ -41,10 +42,6 @@ export function GameHistory() {
 
   // Filter out rounds without any players
   const roundsWithPlayers = rounds?.filter(round => round.winner_user_id !== null);
-  
-  function getRoundWinner(round: { winner_user_id: number | null; winning_number: number | null }) {
-    return round.winner_user_id ? gameState.players.find(player => player.id === round.winner_user_id)?.username || null : null;
-  }
   
   return (
     <div className="p-6">
