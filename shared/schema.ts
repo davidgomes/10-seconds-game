@@ -74,18 +74,3 @@ export interface RoundNumber {
   number: number;
   displayIndex: number;
 }
-
-// WebSocket message types
-export type ServerMessage = 
-  | { type: 'gameState'; data: GameState }
-  | { type: 'newRound'; data: RoundState }
-  | { type: 'numberRevealed'; data: { roundId: number; number: number; displayIndex: number } }
-  | { type: 'roundEnded'; data: RoundState }
-  | { type: 'playerJoined'; data: Player }
-  | { type: 'playerLeft'; data: { id: number } }
-  | { type: 'numberPicked'; data: { roundId: number; pick: UserPick } }
-  | { type: 'error'; error: string };
-
-export type ClientMessage =
-  | { type: 'join'; username: string }
-  | { type: 'pickNumber'; data: { roundId: number; number: number } };

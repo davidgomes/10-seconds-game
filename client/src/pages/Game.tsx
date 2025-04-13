@@ -64,19 +64,6 @@ export default function Game() {
     `SELECT number FROM picks WHERE user_id = $1 AND round_id = $2`,
     [currentPlayer?.id ?? null, currentRound?.id ?? null]
   );
-  console.log("userPickResult", userPickResult, "currentPlayer?.id ?? null", currentPlayer?.id ?? null, "currentRound?.id ?? null", currentRound?.id ?? null);
-  
-  const numUserPicks = useLiveQuery<{count: number}>(
-    `SELECT COUNT(*) FROM picks WHERE user_id = $1`,
-    [currentPlayer?.id ?? null]
-  );
-  console.log("numUserPicks", numUserPicks?.rows[0].count);
-  
-  const allUserPicks = useLiveQuery<{round_id: number, number: number}>(
-    `SELECT round_id, number FROM picks WHERE user_id = $1`,
-    [currentPlayer?.id ?? null]
-  );
-  console.log("allUserPicks", allUserPicks);
   
   const userPick: number | null = userPickResult?.rows[0]?.number ?? null;
 

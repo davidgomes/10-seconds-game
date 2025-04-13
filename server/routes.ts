@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { gameManager } from "./gameManager";
 import { getThemeFromCookie, setThemeCookie, clearThemeCookie, getUsernameFromCookie, setUsernameCookie, clearUsernameCookie } from "./cookie-utils";
@@ -12,14 +11,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
   const httpServer = createServer(app);
   
-  // Create WebSocket server
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  
-  // Handle WebSocket connections
-  wss.on('connection', (socket: WebSocket) => {
-    gameManager.handleConnection(socket);
-  });
-
   // REST API routes
   
   // Get current game state

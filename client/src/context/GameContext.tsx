@@ -277,7 +277,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }  
 
     try {
-      await db.exec(
+      await db.query(
         `INSERT INTO picks (
           id,
           user_id,
