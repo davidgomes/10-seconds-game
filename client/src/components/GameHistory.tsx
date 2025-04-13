@@ -1,6 +1,7 @@
 import React from 'react';
 import { useGame } from '@/context/GameContext';
-
+import { useShape } from '@electric-sql/react';
+import { VITE_ELECTRIC_SOURCE_ID, VITE_ELECTRIC_SOURCE_SECRET } from '@/constants';
 export function GameHistory() {
   const { gameState } = useGame();
   
@@ -23,8 +24,27 @@ export function GameHistory() {
     }
   };
   
+  const { data: rounds } = useShape<{
+    id: number;
+    start_time: string;
+    winner_user_id: number | null;
+    winning_number: number | null;
+    end_time: string | null;
+  }>({
+    url: `https://api.electric-sql.cloud/v1/shape`,
+    params: {
+      table: `rounds`,
+      source_id: VITE_ELECTRIC_SOURCE_ID,
+      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
+    }
+  });
+
   // Filter out rounds without any players
-  const roundsWithPlayers = gameState.roundHistory.filter(round => round.picks.length > 0);
+  const roundsWithPlayers = rounds?.filter(round => round.winner_user_id !== null);
+  
+  function getRoundWinner(round: { winner_user_id: number | null; winning_number: number | null }) {
+    return round.winner_user_id ? gameState.players.find(player => player.id === round.winner_user_id)?.username || null : null;
+  }
   
   return (
     <div className="p-6">
@@ -36,7 +56,7 @@ export function GameHistory() {
             <div className="bg-muted px-4 py-2 flex justify-between items-center">
               <span className="font-medium">Round {round.id}</span>
               <span className="text-sm text-muted-foreground">
-                {formatDate(round.endTime || round.startTime)}
+                {formatDate(round.end_time || round.start_time)}
               </span>
             </div>
             <div className="p-4">

@@ -8,18 +8,18 @@ export function GameTabs() {
   return (
     <Card className="overflow-hidden">
       <Tabs defaultValue="leaderboard">
-        <TabsList className="w-full grid grid-cols-2">
+        <TabsList className="w-full grid grid-cols-1">
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-          <TabsTrigger value="history">Game History</TabsTrigger>
+          {/* <TabsTrigger value="history">Game History</TabsTrigger> */}
         </TabsList>
         
         <TabsContent value="leaderboard">
-          <Leaderboard />
+          {/* <Leaderboard /> */}
         </TabsContent>
         
-        <TabsContent value="history">
-          <GameHistory />
-        </TabsContent>
+        {/* <TabsContent value="history"> */}
+          {/* <GameHistory /> */}
+        {/* </TabsContent> */}
       </Tabs>
     </Card>
   );

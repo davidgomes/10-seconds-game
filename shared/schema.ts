@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -15,12 +15,19 @@ export const rounds = pgTable("rounds", {
   winningNumber: integer("winning_number"),
 });
 
+export const roundNumbers = pgTable("round_numbers", {
+  roundId: integer("round_id").notNull().references(() => rounds.id),
+  number: integer("number").notNull(),
+  displayIndex: integer("display_index").notNull(),
+});
+
 export const picks = pgTable("picks", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   roundId: integer("round_id").notNull().references(() => rounds.id),
   number: integer("number").notNull(),
   timestamp: timestamp("timestamp").notNull(),
+  writeId: uuid("write_id").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users);
@@ -38,9 +45,7 @@ export interface RoundState {
   active: boolean;
   startTime: Date;
   endTime: Date | null;
-  numbers: number[];
   displayedNumbers: number[];
-  picks: UserPick[];
   winner: string | null;
   winningNumber: number | null;
 }
@@ -62,20 +67,10 @@ export interface Player {
 export interface GameState {
   currentRound: RoundState;
   players: Player[];
-  roundHistory: RoundState[];
 }
 
-// WebSocket message types
-export type ServerMessage = 
-  | { type: 'gameState'; data: GameState }
-  | { type: 'newRound'; data: RoundState }
-  | { type: 'numberRevealed'; data: { roundId: number; number: number; displayIndex: number } }
-  | { type: 'roundEnded'; data: RoundState }
-  | { type: 'playerJoined'; data: Player }
-  | { type: 'playerLeft'; data: { id: number } }
-  | { type: 'numberPicked'; data: { roundId: number; pick: UserPick } }
-  | { type: 'error'; error: string };
-
-export type ClientMessage =
-  | { type: 'join'; username: string }
-  | { type: 'pickNumber'; data: { roundId: number; number: number } };
+export interface RoundNumber {
+  roundId: number;
+  number: number;
+  displayIndex: number;
+}
