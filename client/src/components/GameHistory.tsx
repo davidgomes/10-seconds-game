@@ -3,13 +3,27 @@ import { useGame } from '@/context/GameContext';
 import { useShape } from '@electric-sql/react';
 import { VITE_ELECTRIC_SOURCE_ID, VITE_ELECTRIC_SOURCE_SECRET } from '@/constants';
 
+// Define types for our data
+interface Round {
+  id: number;
+  start_time: string;
+  winner_user_id: number | null;
+  winning_number: number | null;
+  end_time: string | null;
+}
+
+interface Pick {
+  username: string;
+  number: number;
+}
+
 export function GameHistory() {
   const { gameState } = useGame();
   
   if (!gameState) return null;
   
-  const formatDate = (date: Date) => {
-    const d = new Date(date);
+  const formatDate = (dateString: string) => {
+    const d = new Date(dateString);
     const now = new Date();
     
     const diffSeconds = Math.floor((now.getTime() - d.getTime()) / 1000);
@@ -25,6 +39,7 @@ export function GameHistory() {
     }
   };
 
+  // Use any for the shape type since we're having issues with the Row constraint
   const { data: rounds } = useShape<{
     id: number;
     start_time: string;
@@ -39,9 +54,9 @@ export function GameHistory() {
       source_secret: VITE_ELECTRIC_SOURCE_SECRET,
     }
   });
-
+  
   // Filter out rounds without any players
-  const roundsWithPlayers = rounds?.filter(round => round.winner_user_id !== null);
+  const roundsWithPlayers = rounds?.filter(round => round.winner_user_id !== null) || [];
   
   return (
     <div className="p-6">
@@ -59,33 +74,17 @@ export function GameHistory() {
             <div className="p-4">
               <div className="mb-2">
                 <span className="font-medium text-primary">Winner:</span>{' '}
-                {round.winner 
-                  ? `${round.winner} with ${round.winningNumber}` 
+                {round.winner_user_id 
+                  ? `User ${round.winner_user_id} with ${round.winning_number}` 
                   : 'No winner'
                 }
               </div>
               
-              {round.picks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-3">
-                  {round.picks.map((pick, index) => (
-                    <div 
-                      key={`${pick.username}-${index}`}
-                      className={`bg-muted p-2 rounded-md flex justify-between ${
-                        pick.username === round.winner ? 'bg-accent/30' : ''
-                      }`}
-                    >
-                      <span className="text-sm">{pick.username}</span>
-                      <span className={`font-medium ${pick.username === round.winner ? 'text-accent-foreground' : ''}`}>
-                        {pick.number}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-3 text-muted-foreground text-sm">
-                  No picks were made in this round
-                </div>
-              )}
+              {/* Since we don't have picks data in the current API response, 
+                  we'll need to fetch it separately or modify the API to include it */}
+              <div className="mt-3 text-muted-foreground text-sm">
+                Pick data not available
+              </div>
             </div>
           </div>
         ))}
