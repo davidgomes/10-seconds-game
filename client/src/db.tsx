@@ -25,7 +25,7 @@ export async function loadPGlite(): Promise<PGliteWithLive> {
 }
 
 async function _loadPGlite(): Promise<PGliteWithLive> {
-  const pglite: PGliteWithLive = await PGlite.create({
+  const pglite: PGliteWithLive = await PGlite.create(DATA_DIR, {
     extensions: {
       electric: electricSync(),
       live,
