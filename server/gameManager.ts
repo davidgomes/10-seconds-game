@@ -1,7 +1,5 @@
 import { storage } from "./storage";
-import {
-  type RoundState,
-} from "@shared/schema";
+import { type RoundState } from "@shared/schema";
 
 export class GameManager {
   private currentRound: RoundState | null = null;
@@ -23,7 +21,7 @@ export class GameManager {
   // Game logic
   private async startNewRound() {
     console.debug("Starting new round");
-    
+
     try {
       // End previous round if it exists
       if (this.currentRound) {
@@ -35,7 +33,7 @@ export class GameManager {
         clearTimeout(this.roundTimer);
         this.roundTimer = null;
       }
-      
+
       if (this.numberRevealTimer) {
         clearInterval(this.numberRevealTimer);
         this.numberRevealTimer = null;
@@ -47,7 +45,7 @@ export class GameManager {
         startTime,
         endTime: null,
         winnerUserId: null,
-        winningNumber: null
+        winningNumber: null,
       });
 
       // Initialize the round state
@@ -58,7 +56,7 @@ export class GameManager {
         endTime: null,
         displayedNumbers: [],
         winner: null,
-        winningNumber: null
+        winningNumber: null,
       };
 
       // Start revealing numbers
@@ -79,7 +77,7 @@ export class GameManager {
     if (!this.currentRound) return;
 
     let numberIndex = 0;
-    
+
     // Reveal numbers one by one
     this.numberRevealTimer = setInterval(async () => {
       if (!this.currentRound || numberIndex >= 10) {
@@ -91,19 +89,23 @@ export class GameManager {
       }
 
       // const number = this.currentRound.numbers[numberIndex];
-      
+
       let number;
       while (true) {
         number = Math.ceil((-Math.log(Math.random()) / 10) * 100);
         if (!this.currentRound.displayedNumbers.includes(number)) {
-          await storage.updateRoundNumber(this.currentRound.id, number, numberIndex);
+          await storage.updateRoundNumber(
+            this.currentRound.id,
+            number,
+            numberIndex,
+          );
           this.currentRound.displayedNumbers.push(number);
           break;
         }
       }
-      
+
       numberIndex++;
-      
+
       // If all numbers have been revealed, clear the interval
       if (numberIndex >= 10) {
         if (this.numberRevealTimer) {
@@ -128,10 +130,10 @@ export class GameManager {
         // Sort picks by number (descending)
         const sortedPicks = [...picks].sort((a, b) => b.number - a.number);
         const winningPick = sortedPicks[0];
-        
+
         console.log("winningPick", winningPick);
         const user = await storage.getUser(winningPick.userId);
-        
+
         if (!user) {
           throw new Error("User not found for pick");
         }
@@ -142,18 +144,20 @@ export class GameManager {
         // Update the round in storage
         await storage.updateRound(this.currentRound.id, {
           endTime: this.currentRound.endTime,
-            winnerUserId: user.id,
-            winningNumber: winningPick.number
-          });
-          
+          winnerUserId: user.id,
+          winningNumber: winningPick.number,
+        });
+
         // Log the winner for debugging
-        console.log(`Round ${this.currentRound.id} won by ${user.username} (ID: ${user.id}) with number ${winningPick.number}`);
+        console.log(
+          `Round ${this.currentRound.id} won by ${user.username} (ID: ${user.id}) with number ${winningPick.number}`,
+        );
       } else {
         // No picks in this round
         await storage.updateRound(this.currentRound.id, {
-          endTime: this.currentRound.endTime
+          endTime: this.currentRound.endTime,
         });
-        
+
         console.log(`Round ${this.currentRound.id} ended with no picks`);
       }
     } catch (error) {

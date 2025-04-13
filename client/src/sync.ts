@@ -1,52 +1,57 @@
-import { type Operation } from '@electric-sql/client'
-import { type PGliteWithLive } from '@electric-sql/pglite/live'
-import { type Change, type Transaction } from '@shared/types'
+import { type Operation } from "@electric-sql/client";
+import { type PGliteWithLive } from "@electric-sql/pglite/live";
+import { type Change, type Transaction } from "@shared/types";
 
 // Create a simple API client
 const api = {
-  request: async (path: string, method: string, body?: any, signal?: AbortSignal): Promise<Response> => {
+  request: async (
+    path: string,
+    method: string,
+    body?: any,
+    signal?: AbortSignal,
+  ): Promise<Response> => {
     const response = await fetch(path, {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
       signal,
     });
     return response;
-  }
+  },
 };
 
-type SendResult = 'accepted' | 'rejected' | 'retry'
+type SendResult = "accepted" | "rejected" | "retry";
 
 /*
  * Minimal, naive synchronization utility, just to illustrate the pattern of
  * `listen`ing to `changes` and `POST`ing them to the api server.
  */
 export default class ChangeLogSynchronizer {
-  private db: PGliteWithLive
-  private position: number
+  private db: PGliteWithLive;
+  private position: number;
 
-  private hasChangedWhileProcessing: boolean = false
-  private shouldContinue: boolean = true
-  private status: 'idle' | 'processing' = 'idle'
+  private hasChangedWhileProcessing: boolean = false;
+  private shouldContinue: boolean = true;
+  private status: "idle" | "processing" = "idle";
 
-  private abortController?: AbortController
-  private unsubscribe?: () => Promise<void>
+  private abortController?: AbortController;
+  private unsubscribe?: () => Promise<void>;
 
   constructor(db: PGliteWithLive, position = 0) {
-    this.db = db
-    this.position = position
+    this.db = db;
+    this.position = position;
   }
 
   /*
    * Start by listening for notifications.
    */
   async start(): Promise<void> {
-    this.abortController = new AbortController()
-    this.unsubscribe = await this.db.listen('changes', this.handle.bind(this))
+    this.abortController = new AbortController();
+    this.unsubscribe = await this.db.listen("changes", this.handle.bind(this));
 
-    this.process()
+    this.process();
   }
 
   /*
@@ -54,50 +59,50 @@ export default class ChangeLogSynchronizer {
    * so we can process them straightaway on the next loop.
    */
   async handle(): Promise<void> {
-    if (this.status === 'processing') {
-      this.hasChangedWhileProcessing = true
+    if (this.status === "processing") {
+      this.hasChangedWhileProcessing = true;
 
-      return
+      return;
     }
 
-    this.status = 'processing'
+    this.status = "processing";
 
-    this.process()
+    this.process();
   }
 
   // Process the changes by fetching them and posting them to the server.
   // If the changes are accepted then proceed, otherwise rollback or retry.
   async process(): Promise<void> {
-    this.hasChangedWhileProcessing = false
+    this.hasChangedWhileProcessing = false;
 
-    const { changes, position } = await this.query()
+    const { changes, position } = await this.query();
 
     if (changes.length) {
-      const result: SendResult = await this.send(changes)
+      const result: SendResult = await this.send(changes);
 
       switch (result) {
-        case 'accepted':
-          await this.proceed(position)
+        case "accepted":
+          await this.proceed(position);
 
-          break
+          break;
 
-        case 'rejected':
-          await this.rollback()
+        case "rejected":
+          await this.rollback();
 
-          break
+          break;
 
-        case 'retry':
-          this.hasChangedWhileProcessing = true
+        case "retry":
+          this.hasChangedWhileProcessing = true;
 
-          break
+          break;
       }
     }
 
     if (this.hasChangedWhileProcessing && this.shouldContinue) {
-      return await this.process()
+      return await this.process();
     }
 
-    this.status = 'idle'
+    this.status = "idle";
   }
 
   /*
@@ -108,51 +113,51 @@ export default class ChangeLogSynchronizer {
       SELECT * from changes
         WHERE id > ${this.position}
         ORDER BY id asc
-    `
+    `;
 
-    const position = rows.length ? rows.at(-1)!.id : this.position
+    const position = rows.length ? rows.at(-1)!.id : this.position;
 
     return {
       changes: rows,
       position,
-    }
+    };
   }
 
   /*
    * Send the current batch of changes to the server, grouped by transaction.
    */
   async send(changes: Change[]): Promise<SendResult> {
-    const path = '/changes'
+    const path = "/changes";
 
-    const groups = Object.groupBy(changes, (x) => x.transaction_id)
+    const groups = Object.groupBy(changes, (x) => x.transaction_id);
     const sorted = Object.entries(groups).sort((a, b) =>
-      a[0].localeCompare(b[0])
-    )
+      a[0].localeCompare(b[0]),
+    );
     const transactions = sorted.map(([transaction_id, changes]) => {
       return {
         id: transaction_id,
         changes: changes,
-      }
-    })
+      };
+    });
 
-    const signal = this.abortController?.signal
+    const signal = this.abortController?.signal;
 
-    let response: Response | undefined
+    let response: Response | undefined;
     try {
-        response = await api.request(path, 'POST', transactions, signal)
+      response = await api.request(path, "POST", transactions, signal);
     } catch (_err) {
-      return 'retry'
+      return "retry";
     }
 
     if (response === undefined) {
-      return 'retry'
+      return "retry";
     }
 
     if (response.ok) {
-      return 'accepted'
+      return "accepted";
     }
 
-    return response.status < 500 ? 'rejected' : 'retry'
+    return response.status < 500 ? "rejected" : "retry";
   }
 
   /*
@@ -162,9 +167,9 @@ export default class ChangeLogSynchronizer {
     await this.db.sql`
       DELETE from changes
         WHERE id <= ${position}
-    `
+    `;
 
-    this.position = position
+    this.position = position;
   }
 
   /*
@@ -173,23 +178,23 @@ export default class ChangeLogSynchronizer {
    */
   async rollback(): Promise<void> {
     await this.db.transaction(async (tx) => {
-      await tx.sql`DELETE from changes`
-      await tx.sql`DELETE from picks_local`
-    })
+      await tx.sql`DELETE from changes`;
+      await tx.sql`DELETE from picks_local`;
+    });
   }
 
   /*
    * Stop synchronizing
    */
   async stop(): Promise<void> {
-    this.shouldContinue = false
+    this.shouldContinue = false;
 
     if (this.abortController !== undefined) {
-      this.abortController.abort()
+      this.abortController.abort();
     }
 
     if (this.unsubscribe !== undefined) {
-      await this.unsubscribe()
+      await this.unsubscribe();
     }
   }
 }

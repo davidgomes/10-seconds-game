@@ -1,6 +1,6 @@
-import React from 'react';
-import { useGame } from '@/context/GameContext';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { useGame } from "@/context/GameContext";
+import { cn } from "@/lib/utils";
 
 interface NumberCardProps {
   number: number;
@@ -9,12 +9,12 @@ interface NumberCardProps {
 
 export function NumberCard({ number, disabled = false }: NumberCardProps) {
   const { gameState, pickNumber, hasPicked } = useGame();
-  
+
   const handleClick = () => {
     if (disabled || hasPicked || !gameState) return;
     pickNumber(gameState.currentRound.id, number);
   };
-  
+
   return (
     <div
       className={cn(
@@ -22,7 +22,7 @@ export function NumberCard({ number, disabled = false }: NumberCardProps) {
         disabled || hasPicked
           ? "bg-gray-100 cursor-not-allowed opacity-70"
           : "bg-gray-50 cursor-pointer hover:bg-[hsl(var(--secondary))] hover:text-white hover:-translate-y-1 hover:shadow-lg",
-        "animate-in slide-in-from-bottom duration-300"
+        "animate-in slide-in-from-bottom duration-300",
       )}
       onClick={handleClick}
     >

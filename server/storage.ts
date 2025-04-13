@@ -12,7 +12,7 @@ import {
   type RoundNumber,
   type UserPick,
   insertRoundSchema,
-  insertPickSchema
+  insertPickSchema,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -30,7 +30,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
-  
+
   // Round methods
   getRound(id: number): Promise<Round | undefined>;
   getCurrentRound(): Promise<Round | undefined>;
@@ -38,14 +38,19 @@ export interface IStorage {
   updateRound(id: number, round: Partial<Round>): Promise<Round | undefined>;
   getRoundHistory(limit: number): Promise<Round[]>;
   getRoundNumbers(roundId: number): Promise<RoundNumber[]>;
-  
+
   // Pick methods
   createPick(pick: InsertPick, id?: string): Promise<Pick>;
   getPicksByRound(roundId: number): Promise<Pick[]>;
-  getUserPickForRound(userId: number, roundId: number): Promise<Pick | undefined>;
-  
+  getUserPickForRound(
+    userId: number,
+    roundId: number,
+  ): Promise<Pick | undefined>;
+
   // Game state methods
-  getPlayerStats(userId: number): Promise<{ wins: number; roundsPlayed: number }>;
+  getPlayerStats(
+    userId: number,
+  ): Promise<{ wins: number; roundsPlayed: number }>;
   getLeaderboard(): Promise<Player[]>;
 }
 
@@ -57,15 +62,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
     return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
@@ -86,36 +91,40 @@ export class DatabaseStorage implements IStorage {
       .from(rounds)
       .orderBy(desc(rounds.id))
       .limit(1);
-    
+
     // Find the most recent round where endTime is null
-    return allRounds.find(round => round.endTime === null);
+    return allRounds.find((round) => round.endTime === null);
   }
 
   async createRound(insertRound: InsertRound): Promise<Round> {
-    const [round] = await db
-      .insert(rounds)
-      .values(insertRound)
-      .returning();
-    
+    const [round] = await db.insert(rounds).values(insertRound).returning();
+
     return round;
   }
 
-  async updateRound(id: number, roundUpdate: Partial<Round>): Promise<Round | undefined> {
+  async updateRound(
+    id: number,
+    roundUpdate: Partial<Round>,
+  ): Promise<Round | undefined> {
     const [updatedRound] = await db
       .update(rounds)
       .set(roundUpdate)
       .where(eq(rounds.id, id))
       .returning();
-    
+
     return updatedRound;
   }
 
-  async updateRoundNumber(id: number, number: number, displayIndex: number): Promise<RoundNumber | undefined> {
+  async updateRoundNumber(
+    id: number,
+    number: number,
+    displayIndex: number,
+  ): Promise<RoundNumber | undefined> {
     const [updatedRoundNumber] = await db
       .insert(roundNumbers)
       .values({ roundId: id, number, displayIndex })
       .returning();
-    
+
     return updatedRoundNumber;
   }
 
@@ -126,9 +135,9 @@ export class DatabaseStorage implements IStorage {
       .from(rounds)
       .orderBy(desc(rounds.id))
       .limit(limit);
-    
+
     // Filter out rounds where endTime is null
-    return allRounds.filter(round => round.endTime !== null);
+    return allRounds.filter((round) => round.endTime !== null);
   }
 
   async getRoundNumbers(roundId: number): Promise<RoundNumber[]> {
@@ -145,80 +154,77 @@ export class DatabaseStorage implements IStorage {
       .insert(picks)
       .values({
         ...insertPick,
-        id: id || uuidv4()
+        id: id || uuidv4(),
       })
       .returning();
-    
+
     return pick;
   }
 
   async getPicksByRound(roundId: number): Promise<Pick[]> {
-    return await db
-      .select()
-      .from(picks)
-      .where(eq(picks.roundId, roundId));
+    return await db.select().from(picks).where(eq(picks.roundId, roundId));
   }
 
-  async getUserPickForRound(userId: number, roundId: number): Promise<Pick | undefined> {
+  async getUserPickForRound(
+    userId: number,
+    roundId: number,
+  ): Promise<Pick | undefined> {
     const [pick] = await db
       .select()
       .from(picks)
-      .where(
-        and(
-          eq(picks.userId, userId),
-          eq(picks.roundId, roundId)
-        )
-      );
-    
+      .where(and(eq(picks.userId, userId), eq(picks.roundId, roundId)));
+
     return pick;
   }
 
   // Game state methods
-  async getPlayerStats(userId: number): Promise<{ wins: number; roundsPlayed: number }> {
+  async getPlayerStats(
+    userId: number,
+  ): Promise<{ wins: number; roundsPlayed: number }> {
     // Count rounds played by the user
     const userPicks = await db
       .select()
       .from(picks)
       .where(eq(picks.userId, userId));
-    
+
     // Count rounds won by the user - only count rounds where this user is the winner
     const userWins = await db
       .select()
       .from(rounds)
       .where(eq(rounds.winnerUserId, userId));
-    
+
     // Count unique rounds to get the actual rounds played
-    const uniqueRounds = new Set(userPicks.map(pick => pick.roundId));
-    
-    return { 
-      wins: userWins.length, 
-      roundsPlayed: uniqueRounds.size 
+    const uniqueRounds = new Set(userPicks.map((pick) => pick.roundId));
+
+    return {
+      wins: userWins.length,
+      roundsPlayed: uniqueRounds.size,
     };
   }
 
   async getLeaderboard(): Promise<Player[]> {
     // Get all users
     const usersList = await this.getAllUsers();
-    
+
     // Get stats for each user and create the leaderboard
     const leaderboard = await Promise.all(
       usersList.map(async (user) => {
         const stats = await this.getPlayerStats(user.id);
-        
+
         return {
           id: user.id,
           username: user.username,
           wins: stats.wins,
           roundsPlayed: stats.roundsPlayed,
           connected: true, // Will be updated by GameManager
-          participating: false // Will be updated by GameManager
+          participating: false, // Will be updated by GameManager
         };
-      })
+      }),
     );
-    
+
     // Sort by wins descending
     leaderboard.sort((a, b) => b.wins - a.wins);
-    
+
     return leaderboard;
   }
 }

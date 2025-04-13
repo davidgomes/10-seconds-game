@@ -58,7 +58,7 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
-  
+
   console.debug("Creating GameManager");
   const gameManager = new GameManager();
 

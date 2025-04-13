@@ -1,7 +1,7 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 
-const THEME_COOKIE_NAME = 'preferred-theme';
-const USERNAME_COOKIE_NAME = 'username';
+const THEME_COOKIE_NAME = "preferred-theme";
+const USERNAME_COOKIE_NAME = "username";
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 * 1000; // 1 year in milliseconds
 
 /**
@@ -11,9 +11,9 @@ export function setThemeCookie(res: Response, theme: string) {
   res.cookie(THEME_COOKIE_NAME, theme, {
     maxAge: COOKIE_MAX_AGE,
     httpOnly: false, // Allow JavaScript access
-    secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
-    sameSite: 'lax',
-    path: '/',
+    secure: process.env.NODE_ENV === "production", // Only send over HTTPS in production
+    sameSite: "lax",
+    path: "/",
   });
 }
 
@@ -29,7 +29,7 @@ export function getThemeFromCookie(req: Request): string | undefined {
  * Clear the theme cookie
  */
 export function clearThemeCookie(res: Response) {
-  res.clearCookie(THEME_COOKIE_NAME, { path: '/' });
+  res.clearCookie(THEME_COOKIE_NAME, { path: "/" });
 }
 
 /**
@@ -39,9 +39,9 @@ export function setUsernameCookie(res: Response, username: string) {
   res.cookie(USERNAME_COOKIE_NAME, username, {
     maxAge: COOKIE_MAX_AGE,
     httpOnly: false, // Allow JavaScript access
-    secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
-    sameSite: 'lax',
-    path: '/',
+    secure: process.env.NODE_ENV === "production", // Only send over HTTPS in production
+    sameSite: "lax",
+    path: "/",
   });
 }
 
@@ -57,7 +57,7 @@ export function getUsernameFromCookie(req: Request): string | undefined {
  * Clear the username cookie
  */
 export function clearUsernameCookie(res: Response) {
-  res.clearCookie(USERNAME_COOKIE_NAME, { path: '/' });
+  res.clearCookie(USERNAME_COOKIE_NAME, { path: "/" });
 }
 
 /**
@@ -66,4 +66,4 @@ export function clearUsernameCookie(res: Response) {
 export function clearAllCookies(res: Response) {
   clearThemeCookie(res);
   clearUsernameCookie(res);
-} 
+}

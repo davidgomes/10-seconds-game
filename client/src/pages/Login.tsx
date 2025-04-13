@@ -1,19 +1,14 @@
-import React, { useState } from 'react';
-import { useGame } from '@/context/GameContext';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ThemePicker } from '@/components/ThemePicker';
-import { 
-  Clock, 
-  Shuffle, 
-  Hand, 
-  Trophy 
-} from 'lucide-react';
+import React, { useState } from "react";
+import { useGame } from "@/context/GameContext";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ThemePicker } from "@/components/ThemePicker";
+import { Clock, Shuffle, Hand, Trophy } from "lucide-react";
 
 export default function Login() {
-  const [usernameInput, setUsernameInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState("");
   const { login } = useGame();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,9 +28,11 @@ export default function Login() {
               10 seconds, 10 numbers, 1 pick
             </h2>
           </div>
-          
-          <p className="text-center mb-6">Enter your username to start playing!</p>
-          
+
+          <p className="text-center mb-6">
+            Enter your username to start playing!
+          </p>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="username">Username</Label>
@@ -48,15 +45,12 @@ export default function Login() {
                 required
               />
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full"
-            >
+
+            <Button type="submit" className="w-full">
               Start Playing
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <h3 className="font-bold text-lg mb-2">How to Play:</h3>
             <ul className="text-left space-y-2 text-sm">

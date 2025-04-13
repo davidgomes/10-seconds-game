@@ -15,12 +15,16 @@ import {
   PGliteProvider,
   useLiveQuery,
   usePGlite,
-} from '@electric-sql/pglite-react'
-import { type PGliteWithLive } from '@electric-sql/pglite/live'
-import { loadPGlite } from './db';
+} from "@electric-sql/pglite-react";
+import { type PGliteWithLive } from "@electric-sql/pglite/live";
+import { loadPGlite } from "./db";
 import ChangeLogSynchronizer from "@/sync";
 
-function ProtectedRouteWithProviders({ component: Component }: { component: React.ComponentType }) {
+function ProtectedRouteWithProviders({
+  component: Component,
+}: {
+  component: React.ComponentType;
+}) {
   const { isLoggedIn } = useGame();
   const { isLoading } = useLoading();
 
@@ -36,46 +40,49 @@ function ProtectedRouteWithProviders({ component: Component }: { component: Reac
 }
 
 function AppRoutes() {
-  const [db, setDb] = useState<PGliteWithLive>()
+  const [db, setDb] = useState<PGliteWithLive>();
 
   useEffect(() => {
-    let isMounted = true
-    let writePathSync: ChangeLogSynchronizer
+    let isMounted = true;
+    let writePathSync: ChangeLogSynchronizer;
 
     async function init() {
-      const pglite = await loadPGlite()
+      const pglite = await loadPGlite();
 
       if (!isMounted) {
-        return
+        return;
       }
 
-      writePathSync = new ChangeLogSynchronizer(pglite)
-      writePathSync.start()
+      writePathSync = new ChangeLogSynchronizer(pglite);
+      writePathSync.start();
 
-      setDb(pglite)
+      setDb(pglite);
     }
 
-    init()
+    init();
 
     return () => {
-      isMounted = false
+      isMounted = false;
 
       // if (writePathSync !== undefined) {
-        // writePathSync.stop()
+      // writePathSync.stop()
       // }
-    }
+    };
   }, []);
 
   if (!db) {
     return null;
   }
-  
+
   return (
     <PGliteProvider db={db}>
       <GameProvider>
         <Switch>
-          <Route path="/" component={() => <ProtectedRouteWithProviders component={Game} />} />
-        <Route component={NotFound} />
+          <Route
+            path="/"
+            component={() => <ProtectedRouteWithProviders component={Game} />}
+          />
+          <Route component={NotFound} />
         </Switch>
         <Toaster />
       </GameProvider>
@@ -86,13 +93,12 @@ function AppRoutes() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      
       <ThemeProvider>
         <LoadingProvider>
           <GlobalLoadingIndicator />
           <AppRoutes />
-          </LoadingProvider>
-        </ThemeProvider>
+        </LoadingProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

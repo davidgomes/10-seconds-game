@@ -1,28 +1,28 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getThemePreference, setThemePreference } from '@/lib/themeApi';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { getThemePreference, setThemePreference } from "@/lib/themeApi";
 
-type Theme = 'vibe' | 'dark' | 'system';
+type Theme = "vibe" | "dark" | "system";
 
 interface ThemeContextType {
   theme: Theme;
-  resolvedTheme: 'vibe' | 'dark'; // The actual theme applied (never 'system')
+  resolvedTheme: "vibe" | "dark"; // The actual theme applied (never 'system')
   setTheme: (theme: Theme) => void;
 }
 
 // Create a default context with no-op function to avoid null checks
 const defaultThemeContext: ThemeContextType = {
-  theme: 'system',
-  resolvedTheme: 'vibe',
+  theme: "system",
+  resolvedTheme: "vibe",
   setTheme: () => {
-    console.warn('ThemeProvider not initialized yet');
-  }
+    console.warn("ThemeProvider not initialized yet");
+  },
 };
 
 const ThemeContext = createContext<ThemeContextType>(defaultThemeContext);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system');
-  const [resolvedTheme, setResolvedTheme] = useState<'vibe' | 'dark'>('vibe');
+  const [theme, setThemeState] = useState<Theme>("system");
+  const [resolvedTheme, setResolvedTheme] = useState<"vibe" | "dark">("vibe");
   const [mounted, setMounted] = useState(false);
 
   // Initial theme load from server
@@ -32,7 +32,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const serverTheme = await getThemePreference();
         setThemeState(serverTheme as Theme);
       } catch (error) {
-        console.error('Error loading theme preference:', error);
+        console.error("Error loading theme preference:", error);
       }
       setMounted(true);
     }
@@ -43,39 +43,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Determine the actual theme to apply based on preference and system settings
   useEffect(() => {
     if (!mounted) return;
-    
-    if (theme === 'system') {
+
+    if (theme === "system") {
       // Use system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setResolvedTheme(prefersDark ? 'dark' : 'vibe');
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+      setResolvedTheme(prefersDark ? "dark" : "vibe");
     } else {
       // Use explicit theme preference
-      setResolvedTheme(theme === 'dark' ? 'dark' : 'vibe');
+      setResolvedTheme(theme === "dark" ? "dark" : "vibe");
     }
   }, [theme, mounted]);
 
   // Update theme when it changes
   useEffect(() => {
     if (!mounted) return;
-    
+
     // Update data-theme attribute on document element
-    document.documentElement.setAttribute('data-theme', resolvedTheme);
+    document.documentElement.setAttribute("data-theme", resolvedTheme);
   }, [resolvedTheme, mounted]);
 
   // Add listener for system theme changes
   useEffect(() => {
     if (!mounted) return;
-    
+
     // Only listen to system changes if theme is set to 'system'
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      
+    if (theme === "system") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
       const handleChange = (e: MediaQueryListEvent) => {
-        setResolvedTheme(e.matches ? 'dark' : 'vibe');
+        setResolvedTheme(e.matches ? "dark" : "vibe");
       };
-      
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
+
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
     }
   }, [theme, mounted]);
 
@@ -100,4 +102,4 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
   return useContext(ThemeContext);
-} 
+}
