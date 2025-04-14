@@ -13,13 +13,7 @@ import {
 } from "@/context/GameContext";
 import { useShape } from "@electric-sql/react";
 import {
-  VITE_ELECTRIC_SOURCE_ID,
-  VITE_ELECTRIC_SOURCE_SECRET,
-} from "@/constants";
-import {
-  useLiveIncrementalQuery,
   useLiveQuery,
-  usePGlite,
 } from "@electric-sql/pglite-react";
 
 export default function Game() {
@@ -42,8 +36,8 @@ export default function Game() {
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
       table: `round_numbers`,
-      source_id: VITE_ELECTRIC_SOURCE_ID,
-      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
+      source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
+      source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
     },
   });
 
@@ -57,8 +51,8 @@ export default function Game() {
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
       table: `rounds`,
-      source_id: VITE_ELECTRIC_SOURCE_ID,
-      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
+      source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
+      source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
     },
   });
 
@@ -69,7 +63,7 @@ export default function Game() {
 
   // find the current number to display from `roundNumbers`
   const currentRoundNumbers = roundNumbers
-    ?.filter((item) => item.round_id === currentRound.id)
+    ?.filter((item) => item.round_id === currentRound?.id)
     .sort((a, b) => a.displayIndex - b.displayIndex);
   const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
 

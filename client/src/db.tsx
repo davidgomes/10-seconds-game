@@ -3,10 +3,6 @@ import { type PGliteWithLive, live } from "@electric-sql/pglite/live";
 import { electricSync } from "@electric-sql/pglite-sync";
 
 import localSchemaMigrations from "./local-schema.sql?raw";
-import {
-  VITE_ELECTRIC_SOURCE_ID,
-  VITE_ELECTRIC_SOURCE_SECRET,
-} from "@/constants";
 
 const DATA_DIR = "idb://local-db-5";
 
@@ -39,8 +35,8 @@ async function _loadPGlite(): Promise<PGliteWithLive> {
       url: `${`https://api.electric-sql.cloud`}/v1/shape`,
       params: {
         table: "picks",
-        source_id: VITE_ELECTRIC_SOURCE_ID,
-        source_secret: VITE_ELECTRIC_SOURCE_SECRET,
+        source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
+        source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
       },
     },
     shapeKey: "picks",

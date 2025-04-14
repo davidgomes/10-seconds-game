@@ -42,7 +42,7 @@ export function Leaderboard() {
               const isCurrentUser = player.username === username;
 
               return (
-                <TableRow className={isCurrentUser ? "bg-muted/50" : undefined}>
+                <TableRow key={player.username} className={isCurrentUser ? "bg-muted/50" : undefined}>
                   <TableCell className="text-center font-medium">
                     {index + 1}
                   </TableCell>
