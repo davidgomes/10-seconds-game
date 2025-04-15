@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { useGame } from "@/context/GameContext";
+import React from "react";
+import { useGame, ROUND_DURATION_SECONDS, BETWEEN_ROUNDS_DURATION_SECONDS } from "@/context/GameContext";
 import { GameTabs } from "@/components/GameTabs";
 import { ThemePicker } from "@/components/ThemePicker";
 import { Button } from "@/components/ui/button";
@@ -7,23 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { LogOut, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Confetti from "react-confetti";
-import {
-  ROUND_DURATION_SECONDS,
-  BETWEEN_ROUNDS_DURATION_SECONDS,
-} from "@/context/GameContext";
-import { useShape } from "@electric-sql/react";
-import {
-  VITE_ELECTRIC_SOURCE_ID,
-  VITE_ELECTRIC_SOURCE_SECRET,
-} from "@/constants";
-import {
-  useLiveIncrementalQuery,
-  useLiveQuery,
-  usePGlite,
-} from "@electric-sql/pglite-react";
 
 export default function Game() {
-  let {
+  const {
     gameState,
     username,
     userWins,
@@ -32,91 +18,17 @@ export default function Game() {
     timeLeft,
     timeLeftBetweenRounds,
     showConfetti,
+    currentNumber,
+    roundStatus,
+    didUserWin,
+    isRoundOver,
+    winningNumber,
+    timeLeftProgress,
+    timeLeftBetweenRoundsProgress,
+    userPick,
   } = useGame();
 
-  const { data: roundNumbers } = useShape<{
-    displayIndex: number;
-    number: number;
-    round_id: number;
-  }>({
-    url: `https://api.electric-sql.cloud/v1/shape`,
-    params: {
-      table: `round_numbers`,
-      source_id: VITE_ELECTRIC_SOURCE_ID,
-      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
-    },
-  });
-
-  const { data: rounds } = useShape<{
-    id: number;
-    start_time: string;
-    winner_user_id: number | null;
-    winning_number: number | null;
-    end_time: string | null;
-  }>({
-    url: `https://api.electric-sql.cloud/v1/shape`,
-    params: {
-      table: `rounds`,
-      source_id: VITE_ELECTRIC_SOURCE_ID,
-      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
-    },
-  });
-
-  const currentRound = rounds?.sort(
-    (a, b) =>
-      new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
-  )[0];
-
-  // find the current number to display from `roundNumbers`
-  const currentRoundNumbers = roundNumbers
-    ?.filter((item) => item.round_id === currentRound.id)
-    .sort((a, b) => a.displayIndex - b.displayIndex);
-  const currentNumber = currentRoundNumbers?.[currentRoundNumbers.length - 1];
-
-  const currentPlayer = gameState?.players.find(
-    (player) => player.username === username,
-  );
-
-  const userPickResult = useLiveQuery<{ number: number }>(
-    `SELECT number FROM picks WHERE user_id = $1 AND round_id = $2`,
-    [currentPlayer?.id ?? null, currentRound?.id ?? null],
-  );
-
-  const userPick: number | null = userPickResult?.rows[0]?.number ?? null;
-
   if (!gameState) return null;
-  if (!currentRound) return null;
-
-  gameState = {
-    currentRound: {
-      id: currentRound.id,
-      active: currentRound.end_time === null,
-      winner: currentRound.winner_user_id
-        ? gameState.players.find(
-            (player) => player.id === currentRound.winner_user_id,
-          )?.username || null
-        : null,
-      winningNumber: currentRound.winning_number,
-      startTime: new Date(currentRound.start_time),
-      endTime: currentRound.end_time ? new Date(currentRound.end_time) : null,
-      displayedNumbers: currentRoundNumbers?.map((item) => item.number) || [],
-    },
-    players: gameState.players,
-  };
-
-  const roundStatus = gameState.currentRound.active
-    ? "Picking phase"
-    : "Round ended";
-
-  const didUserWin =
-    !gameState.currentRound.active &&
-    gameState.currentRound.winner === username;
-  const isRoundOver = !gameState.currentRound.active;
-  const winningNumber = gameState.currentRound.winningNumber;
-
-  const timeLeftProgress = (timeLeft / ROUND_DURATION_SECONDS) * 100;
-  const timeLeftBetweenRoundsProgress =
-    (timeLeftBetweenRounds / BETWEEN_ROUNDS_DURATION_SECONDS) * 100;
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -208,7 +120,7 @@ export default function Game() {
                         </span>
                       </div>
                     </div>
-                  ) : currentNumber?.number || isRoundOver ? (
+                  ) : currentNumber || isRoundOver ? (
                     <div className="flex flex-col items-center">
                       <p className="text-sm text-muted-foreground mb-2">
                         {isRoundOver ? "Winning Number" : "Current Number"}
@@ -227,7 +139,7 @@ export default function Game() {
                           !isRoundOver &&
                           pickNumber(
                             gameState.currentRound.id,
-                            currentNumber?.number,
+                            currentNumber!,
                           )
                         }
                       >
@@ -239,7 +151,7 @@ export default function Game() {
                               : Boolean(userPick) && "text-muted-foreground",
                           )}
                         >
-                          {isRoundOver ? winningNumber : currentNumber?.number}
+                          {isRoundOver ? winningNumber : currentNumber}
                         </span>
                       </div>
                       {/* Show different messages based on game state */}
@@ -312,16 +224,16 @@ export default function Game() {
                 </div>
                 <p className="text-sm font-mono font-bold">
                   {isRoundOver
-                    ? `Next round in ${Math.ceil(timeLeftBetweenRounds)}`
-                    : Math.ceil(timeLeft)}
+                    ? `${Math.ceil(Math.max(0, Math.min(BETWEEN_ROUNDS_DURATION_SECONDS, timeLeftBetweenRounds)))}s`
+                    : `${Math.ceil(Math.max(0, Math.min(ROUND_DURATION_SECONDS, timeLeft)))}s`}
                 </p>
               </div>
 
               <div className="w-full">
                 {isRoundOver ? (
-                  <Progress value={timeLeftBetweenRoundsProgress} />
+                  <Progress value={Math.max(0, Math.min(100, timeLeftBetweenRoundsProgress))} />
                 ) : (
-                  <Progress value={timeLeftProgress} />
+                  <Progress value={Math.max(0, Math.min(100, timeLeftProgress))} />
                 )}
               </div>
             </div>

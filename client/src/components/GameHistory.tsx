@@ -1,10 +1,6 @@
 import React from "react";
 import { useGame } from "@/context/GameContext";
 import { useShape } from "@electric-sql/react";
-import {
-  VITE_ELECTRIC_SOURCE_ID,
-  VITE_ELECTRIC_SOURCE_SECRET,
-} from "@/constants";
 
 // Define types for our data
 interface Round {
@@ -53,8 +49,8 @@ export function GameHistory() {
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
       table: `rounds`,
-      source_id: VITE_ELECTRIC_SOURCE_ID,
-      source_secret: VITE_ELECTRIC_SOURCE_SECRET,
+      source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
+      source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
     },
   });
 
