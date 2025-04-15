@@ -8,11 +8,9 @@ import {
   type Round,
   type Pick,
   type Player,
-  type RoundState,
-  type RoundNumber,
-  type UserPick,
   insertRoundSchema,
   insertPickSchema,
+  RoundNumber,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -30,6 +28,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
 
   // Round methods
   getRound(id: number): Promise<Round | undefined>;
@@ -70,12 +69,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const [user] = await db.insert(users).values({
+      ...insertUser,
+      connected: true, // Set connected to true when user is created
+    }).returning();
     return user;
   }
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
+  }
+
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+
+    return updatedUser;
   }
 
   // Round methods
@@ -203,29 +215,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLeaderboard(): Promise<Player[]> {
-    // Get all users
-    const usersList = await this.getAllUsers();
-
-    // Get stats for each user and create the leaderboard
-    const leaderboard = await Promise.all(
-      usersList.map(async (user) => {
-        const stats = await this.getPlayerStats(user.id);
-
-        return {
-          id: user.id,
-          username: user.username,
-          wins: stats.wins,
-          roundsPlayed: stats.roundsPlayed,
-          connected: true, // Will be updated by GameManager
-          participating: false, // Will be updated by GameManager
-        };
-      }),
+    const allUsers = await this.getAllUsers();
+    const stats = await Promise.all(
+      allUsers.map((user) => this.getPlayerStats(user.id)),
     );
 
-    // Sort by wins descending
-    leaderboard.sort((a, b) => b.wins - a.wins);
-
-    return leaderboard;
+    return allUsers.map((user, index) => ({
+      id: user.id,
+      username: user.username,
+      wins: stats[index].wins,
+      roundsPlayed: stats[index].roundsPlayed,
+      connected: user.connected,
+    }));
   }
 }
 

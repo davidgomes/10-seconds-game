@@ -1,5 +1,6 @@
 import React from "react";
-import { useGame } from "@/context/GameContext";
+import { useGame } from "../context/GameContext";
+import { Player } from '../../../shared/schema';
 import {
   Table,
   TableBody,
@@ -11,78 +12,63 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export function Leaderboard() {
-  const { gameState, username } = useGame();
+  const { gameState } = useGame();
+  
+  if (!gameState) {
+    return null;
+  }
 
-  if (!gameState) return null;
+  const { players } = gameState;
 
-  const players = [...gameState.players].sort((a, b) => b.wins - a.wins);
+  // Sort players by wins (descending), then win percentage (descending), then connection status
+  const sortedPlayers = [...players].sort((a, b) => {
+    // First sort by wins
+    if (a.wins !== b.wins) {
+      return b.wins - a.wins;
+    }
+    // If wins are equal, sort by win percentage
+    const aWinPercentage = a.roundsPlayed > 0 ? a.wins / a.roundsPlayed : 0;
+    const bWinPercentage = b.roundsPlayed > 0 ? b.wins / b.roundsPlayed : 0;
+    if (aWinPercentage !== bWinPercentage) {
+      return bWinPercentage - aWinPercentage;
+    }
+    // If win percentage is equal, sort by connection status (connected players first)
+    return b.connected ? 1 : a.connected ? -1 : 0;
+  });
 
   return (
-    <div className="p-6">
-      <h3 className="text-xl font-bold mb-4">Current Players</h3>
-
-      <div className="overflow-x-auto">
+    <div className="w-full">
+      <div className="rounded-lg shadow overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[80px]">Rank</TableHead>
+              <TableHead>Rank</TableHead>
               <TableHead>Player</TableHead>
               <TableHead>Wins</TableHead>
-              <TableHead>Win Percentage</TableHead>
+              <TableHead>Rounds Played</TableHead>
+              <TableHead>Win %</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {players.map((player, index) => {
-              const winPercentage =
-                player.roundsPlayed > 0
-                  ? Math.round((player.wins / player.roundsPlayed) * 100)
-                  : 0;
-
-              const isCurrentUser = player.username === username;
-
-              return (
-                <TableRow key={player.username} className={isCurrentUser ? "bg-muted/50" : undefined}>
-                  <TableCell className="text-center font-medium">
-                    {index + 1}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {player.username}
-                    {isCurrentUser && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        (You)
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-green-600 font-medium">
-                    {player.wins}
-                  </TableCell>
-                  <TableCell>{winPercentage}%</TableCell>
-                  <TableCell>
-                    {player.connected ? (
-                      <Badge variant="secondary" className="text-green-600">
-                        Active
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-muted-foreground"
-                      >
-                        Disconnected
-                      </Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-
-            {players.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
-                  No players have joined yet
+            {sortedPlayers.map((player: Player, index: number) => (
+              <TableRow key={player.username}>
+                <TableCell>{index + 1}</TableCell>
+                <TableCell>{player.username}</TableCell>
+                <TableCell>{player.wins}</TableCell>
+                <TableCell>{player.roundsPlayed}</TableCell>
+                <TableCell>
+                  {player.roundsPlayed > 0 
+                    ? `${((player.wins / player.roundsPlayed) * 100).toFixed(1)}%`
+                    : '0%'}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={player.connected ? "default" : "secondary"}>
+                    {player.connected ? "Connected" : "Offline"}
+                  </Badge>
                 </TableCell>
               </TableRow>
-            )}
+            ))}
           </TableBody>
         </Table>
       </div>

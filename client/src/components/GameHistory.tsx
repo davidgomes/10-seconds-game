@@ -24,21 +24,24 @@ export function GameHistory() {
   const formatDate = (dateString: string) => {
     const d = new Date(dateString);
     const now = new Date();
-
-    const diffSeconds = Math.floor((now.getTime() - d.getTime()) / 1000);
-
-    if (diffSeconds < 60) {
-      return `${diffSeconds} seconds ago`;
-    } else if (diffSeconds < 3600) {
-      return `${Math.floor(diffSeconds / 60)} minutes ago`;
-    } else if (diffSeconds < 86400) {
-      return `${Math.floor(diffSeconds / 3600)} hours ago`;
-    } else {
-      return d.toLocaleDateString();
+    
+    // Check if it's today
+    if (d.toDateString() === now.toDateString()) {
+      return `Today at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
+    
+    // Check if it's yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) {
+      return `Yesterday at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    
+    // For older dates, show the date and time
+    return `${d.toLocaleDateString()} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
 
-  // Use any for the shape type since we're having issues with the Row constraint
+  // Fetch rounds data
   const { data: rounds } = useShape<{
     id: number;
     start_time: string;
@@ -54,14 +57,29 @@ export function GameHistory() {
     },
   });
 
-  // Filter out rounds without any players
-  const roundsWithPlayers =
-    rounds?.filter((round) => round.winner_user_id !== null) || [];
+  // Fetch users data
+  const { data: users } = useShape<{
+    id: number;
+    username: string;
+  }>({
+    url: `https://api.electric-sql.cloud/v1/shape`,
+    params: {
+      table: `users`,
+      source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
+      source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
+    },
+  });
+
+  // Create a map of user IDs to usernames
+  const userMap = new Map(users?.map(user => [user.id, user.username]) || []);
+
+  // Filter out rounds without any players and sort by start time (most recent first)
+  const roundsWithPlayers = rounds
+    ?.filter((round) => round.winner_user_id !== null)
+    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()) || [];
 
   return (
     <div className="p-6">
-      <h3 className="text-xl font-bold mb-4">Recent Rounds</h3>
-
       <div className="space-y-4">
         {roundsWithPlayers.map((round) => (
           <div
@@ -78,14 +96,8 @@ export function GameHistory() {
               <div className="mb-2">
                 <span className="font-medium text-primary">Winner:</span>{" "}
                 {round.winner_user_id
-                  ? `User ${round.winner_user_id} with ${round.winning_number}`
+                  ? `${userMap.get(round.winner_user_id) || `User ${round.winner_user_id}`} with ${round.winning_number}`
                   : "No winner"}
-              </div>
-
-              {/* Since we don't have picks data in the current API response, 
-                  we'll need to fetch it separately or modify the API to include it */}
-              <div className="mt-3 text-muted-foreground text-sm">
-                Pick data not available
               </div>
             </div>
           </div>
