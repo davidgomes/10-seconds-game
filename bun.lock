@@ -5,7 +5,7 @@
       "name": "rest-express",
       "dependencies": {
         "@electric-sql/pglite-react": "1.0.0-next.1",
-        "@electric-sql/pglite-sync": "0.3.1",
+        "@electric-sql/pglite-sync": "1.0.0-next.1",
         "@electric-sql/react": "1.0.3",
         "@hookform/resolvers": "3.9.1",
         "@jridgewell/trace-mapping": "0.3.25",
@@ -71,7 +71,6 @@
         "uuid": "11.1.0",
         "vaul": "1.1.0",
         "wouter": "3.3.5",
-        "ws": "8.18.0",
         "zod": "3.23.8",
         "zod-validation-error": "3.4.0",
       },
@@ -157,7 +156,7 @@
 
     "@electric-sql/pglite-react": ["@electric-sql/pglite-react@1.0.0-next.1", "", { "peerDependencies": { "@electric-sql/pglite": "^0.3.0-next.1", "react": "^18.0.0 || ^19.0.0 || ^19.0.0-rc" } }, "sha512-DmwyXZayhn5q6Rr8RYUHcZKY/MxWfJCMbY94KJVWKgKsGI/6iMWYXVy3QogOIkfQ7WSmpT7e9Ix2nwsVaObvug=="],
 
-    "@electric-sql/pglite-sync": ["@electric-sql/pglite-sync@0.3.1", "", { "dependencies": { "@electric-sql/client": "1.0.0", "@electric-sql/experimental": "1.0.0" }, "peerDependencies": { "@electric-sql/pglite": "^0.2.17" } }, "sha512-Wyb0iKBmnbTye4UYg9kTESf/7wfO9F9eCiRRqPGtYzM3jSTZHBvmuqUUwnxE31NuzTiH3qIY5GWvgmL+xK6PuA=="],
+    "@electric-sql/pglite-sync": ["@electric-sql/pglite-sync@1.0.0-next.1", "", { "dependencies": { "@electric-sql/client": "1.0.0", "@electric-sql/experimental": "1.0.0" }, "peerDependencies": { "@electric-sql/pglite": "^0.3.0-next.1" } }, "sha512-rFdlAJ0B2vXe94XM31xgcdC7xnBoe2v4M9WtLIstDPbOazyyBJuQO4KGCf6zNKYuc6OVlTgmHAaTiRvECffHxw=="],
 
     "@electric-sql/react": ["@electric-sql/react@1.0.3", "", { "dependencies": { "@electric-sql/client": "1.0.3", "use-sync-external-store": "^1.2.2" }, "peerDependencies": { "react": ">=18.3.1 <20.0.0" }, "optionalPeers": ["react"] }, "sha512-cwTWaCbKeUIE2O06apTog4FPUuIeN7Y1DvJgQdHZvNaCADcJuo4pfRGscZxAj0Srl9otyahoOeAM/uCs7wbsFA=="],
 
@@ -1130,8 +1129,6 @@
     "wrap-ansi": ["wrap-ansi@6.2.0", "", { "dependencies": { "ansi-styles": "^4.0.0", "string-width": "^4.1.0", "strip-ansi": "^6.0.0" } }, "sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA=="],
 
     "wrap-ansi-cjs": ["wrap-ansi@7.0.0", "", { "dependencies": { "ansi-styles": "^4.0.0", "string-width": "^4.1.0", "strip-ansi": "^6.0.0" } }, "sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q=="],
-
-    "ws": ["ws@8.18.0", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" }, "optionalPeers": ["utf-8-validate"] }, "sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw=="],
 
     "xtend": ["xtend@4.0.2", "", {}, "sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ=="],
 

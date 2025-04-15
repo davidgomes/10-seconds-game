@@ -5,7 +5,6 @@ export class GameManager {
   private currentRound: RoundState | null = null;
   private roundTimer: NodeJS.Timeout | null = null;
   private numberRevealTimer: NodeJS.Timeout | null = null;
-  private roundHistoryLimit = 10;
   private readonly roundDuration = 10000; // 10 seconds
   private readonly numberRevealInterval = 1000; // 1 second
 
@@ -20,7 +19,7 @@ export class GameManager {
 
   // Game logic
   private async startNewRound() {
-    console.debug("Starting new round");
+    console.debug("Starting new round", new Date());
 
     try {
       // End previous round if it exists
@@ -88,8 +87,6 @@ export class GameManager {
         return;
       }
 
-      // const number = this.currentRound.numbers[numberIndex];
-
       let number;
       while (true) {
         number = Math.ceil((-Math.log(Math.random()) / 10) * 100);
@@ -118,6 +115,8 @@ export class GameManager {
 
   private async endCurrentRound() {
     if (!this.currentRound || !this.currentRound.active) return;
+
+    console.debug("Ending current round", new Date());
 
     // Mark the round as inactive
     this.currentRound.active = false;

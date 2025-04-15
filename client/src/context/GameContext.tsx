@@ -276,6 +276,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Pick number function
   const pickNumber = async (roundId: number, number: number) => {
+    console.log(`trying to pick number ${number} for round ${roundId}`);
+    
     if (!isLoggedIn || !currentPlayer) {
       toast({
         title: "Error",

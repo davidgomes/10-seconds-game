@@ -102,6 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Only process insert operations for picks
           if (change.operation === "insert" && change.value) {
             const { id, user_id, round_id, number, timestamp } = change.value;
+            console.log("change.value", change.value);
 
             // Validate required fields
             if (
@@ -129,6 +130,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currentRound.id !== round_id ||
               currentRound.endTime !== null
             ) {
+              console.debug(
+                `Invalid round selection for supposed round ${round_id}. Current round: ${currentRound?.id}, End time: ${currentRound?.endTime}, User: ${user_id}`,
+              );
               return res
                 .status(400)
                 .json({ error: "Invalid round or round is not active" });
@@ -137,6 +141,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Get all round numbers to validate the pick
             const roundNumbers = await storage.getRoundNumbers(round_id);
             if (!roundNumbers.some((rn: RoundNumber) => rn.number === number)) {
+              console.debug(
+                `Invalid number selection in round ${round_id}: ${number}`,
+              );
               return res
                 .status(400)
                 .json({ error: "Invalid number selection" });
@@ -148,6 +155,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               round_id,
             );
             if (existingPick) {
+              console.debug(
+                `User already picked in round ${round_id}: ${existingPick.number}`,
+              );
               return res
                 .status(400)
                 .json({ error: "Already picked a number in this round" });
