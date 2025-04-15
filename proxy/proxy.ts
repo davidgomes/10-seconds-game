@@ -2,7 +2,6 @@ const PORT = process.env.PORT || 5006;
 const ELECTRIC_URL =
   process.env.ELECTRIC_URL || "https://api.electric-sql.cloud";
 
-
 const server = Bun.serve({
   port: PORT,
   async fetch(request) {
@@ -45,12 +44,18 @@ const server = Bun.serve({
 
       // Add source ID if available
       if (process.env.VITE_ELECTRIC_SOURCE_ID) {
-        originUrl.searchParams.set("source_id", process.env.VITE_ELECTRIC_SOURCE_ID);
+        originUrl.searchParams.set(
+          "source_id",
+          process.env.VITE_ELECTRIC_SOURCE_ID,
+        );
       }
 
       // Add source secret if available
       if (process.env.VITE_ELECTRIC_SOURCE_ID) {
-        originUrl.searchParams.set("source_secret", process.env.VITE_ELECTRIC_SOURCE_ID);
+        originUrl.searchParams.set(
+          "source_secret",
+          process.env.VITE_ELECTRIC_SOURCE_ID,
+        );
       }
 
       // Create headers object for the outgoing request

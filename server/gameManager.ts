@@ -77,8 +77,7 @@ export class GameManager {
 
     let numberIndex = 0;
 
-    // Reveal numbers one by one
-    this.numberRevealTimer = setInterval(async () => {
+    const revealNumber = async () => {
       if (!this.currentRound || numberIndex >= 10) {
         if (this.numberRevealTimer) {
           clearInterval(this.numberRevealTimer);
@@ -110,7 +109,15 @@ export class GameManager {
           this.numberRevealTimer = null;
         }
       }
-    }, this.numberRevealInterval);
+    };
+
+    // Reveal numbers one by one
+    this.numberRevealTimer = setInterval(
+      revealNumber,
+      this.numberRevealInterval,
+    );
+
+    revealNumber();
   }
 
   private async endCurrentRound() {

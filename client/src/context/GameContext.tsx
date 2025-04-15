@@ -118,20 +118,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
   });
 
   // Get current round
-  const currentRound = useMemo(() => 
-    rounds?.sort(
-      (a, b) =>
-        new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
-    )[0],
-    [rounds]
+  const currentRound = useMemo(
+    () =>
+      rounds?.sort(
+        (a, b) =>
+          new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
+      )[0],
+    [rounds],
   );
 
   // Get current round numbers
-  const currentRoundNumbers = useMemo(() => 
-    roundNumbers
-      ?.filter((item) => item.round_id === currentRound?.id)
-      .sort((a, b) => a.displayIndex - b.displayIndex),
-    [roundNumbers, currentRound?.id]
+  const currentRoundNumbers = useMemo(
+    () =>
+      roundNumbers
+        ?.filter((item) => item.round_id === currentRound?.id)
+        .sort((a, b) => a.displayIndex - b.displayIndex),
+    [roundNumbers, currentRound?.id],
   );
 
   // Get current player
@@ -155,11 +157,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     // Compute stats for each user
     const players: Player[] = users.map((user) => {
       // Count wins
-      const wins = rounds?.filter(round => round.winner_user_id === user.id).length ?? 0;
-      
+      const wins =
+        rounds?.filter((round) => round.winner_user_id === user.id).length ?? 0;
+
       // Count unique rounds played
       const roundsPlayed = new Set(
-        picks?.filter(pick => pick.user_id === user.id).map(pick => pick.round_id)
+        picks
+          ?.filter((pick) => pick.user_id === user.id)
+          .map((pick) => pick.round_id),
       ).size;
 
       return {
@@ -172,14 +177,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
 
     // Convert UTC database timestamps to local Date objects
-    const startTime = new Date(currentRound.start_time + 'Z'); // Append Z to treat as UTC
-    const endTime = currentRound.end_time ? new Date(currentRound.end_time + 'Z') : null;
+    const startTime = new Date(currentRound.start_time + "Z"); // Append Z to treat as UTC
+    const endTime = currentRound.end_time
+      ? new Date(currentRound.end_time + "Z")
+      : null;
 
     const roundState: RoundState = {
       id: currentRound.id,
       active: currentRound.end_time === null,
       winner: currentRound.winner_user_id
-        ? users.find((user) => user.id === currentRound.winner_user_id)?.username || null
+        ? users.find((user) => user.id === currentRound.winner_user_id)
+            ?.username || null
         : null,
       winningNumber: currentRound.winning_number,
       startTime,
@@ -199,7 +207,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     const updateTimers = () => {
       const now = Date.now();
-      
+
       if (gameState.currentRound.active) {
         // During active round
         const startTime = gameState.currentRound.startTime.getTime();
@@ -286,7 +294,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       // Wait a moment for the user to be created in the database
       // This gives time for the shape subscription to pick up the new user
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setUsername(data.username);
       setIsLoggedIn(true);
@@ -329,7 +337,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Pick number function
   const pickNumber = async (roundId: number, number: number) => {
     console.log(`trying to pick number ${number} for round ${roundId}`);
-    
+
     if (!isLoggedIn || !currentPlayer) {
       toast({
         title: "Error",
@@ -357,7 +365,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         )`,
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       if (errorMessage.includes("last available number")) {
         toast({
           title: "Error",
@@ -390,7 +399,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const timeLeftBetweenRoundsProgress = useMemo(() => {
     if (gameState?.currentRound?.active) return 0;
     // Inverted calculation for between-rounds progress (starts empty, fills up)
-    return Math.min(100, ((BETWEEN_ROUNDS_DURATION_SECONDS - timeLeftBetweenRounds) / BETWEEN_ROUNDS_DURATION_SECONDS) * 100);
+    return Math.min(
+      100,
+      ((BETWEEN_ROUNDS_DURATION_SECONDS - timeLeftBetweenRounds) /
+        BETWEEN_ROUNDS_DURATION_SECONDS) *
+        100,
+    );
   }, [timeLeftBetweenRounds, gameState?.currentRound?.active]);
   // Compute derived values
   const userWins = useMemo(() => {
@@ -416,7 +430,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const didUserWin = useMemo(() => {
     if (!gameState?.currentRound || !username) return false;
-    return !gameState.currentRound.active && gameState.currentRound.winner === username;
+    return (
+      !gameState.currentRound.active &&
+      gameState.currentRound.winner === username
+    );
   }, [gameState?.currentRound, username]);
 
   const isRoundOver = useMemo(() => {

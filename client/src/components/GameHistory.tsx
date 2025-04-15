@@ -24,21 +24,21 @@ export function GameHistory() {
   const formatDate = (dateString: string) => {
     const d = new Date(dateString);
     const now = new Date();
-    
+
     // Check if it's today
     if (d.toDateString() === now.toDateString()) {
-      return `Today at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `Today at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
     }
-    
+
     // Check if it's yesterday
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     if (d.toDateString() === yesterday.toDateString()) {
-      return `Yesterday at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `Yesterday at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
     }
-    
+
     // For older dates, show the date and time
-    return `${d.toLocaleDateString()} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    return `${d.toLocaleDateString()} at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
   };
 
   // Fetch rounds data
@@ -71,12 +71,16 @@ export function GameHistory() {
   });
 
   // Create a map of user IDs to usernames
-  const userMap = new Map(users?.map(user => [user.id, user.username]) || []);
+  const userMap = new Map(users?.map((user) => [user.id, user.username]) || []);
 
   // Filter out rounds without any players and sort by start time (most recent first)
-  const roundsWithPlayers = rounds
-    ?.filter((round) => round.winner_user_id !== null)
-    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()) || [];
+  const roundsWithPlayers =
+    rounds
+      ?.filter((round) => round.winner_user_id !== null)
+      .sort(
+        (a, b) =>
+          new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
+      ) || [];
 
   return (
     <div className="p-6">

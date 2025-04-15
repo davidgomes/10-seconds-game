@@ -83,11 +83,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(
           "Invalid request body. Expected an array of transactions.",
         );
-        return res
-          .status(400)
-          .json({
-            error: "Invalid request body. Expected an array of transactions.",
-          });
+        return res.status(400).json({
+          error: "Invalid request body. Expected an array of transactions.",
+        });
       }
 
       // Process each transaction

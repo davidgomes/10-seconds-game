@@ -1,5 +1,9 @@
 import React from "react";
-import { useGame, ROUND_DURATION_SECONDS, BETWEEN_ROUNDS_DURATION_SECONDS } from "@/context/GameContext";
+import {
+  useGame,
+  ROUND_DURATION_SECONDS,
+  BETWEEN_ROUNDS_DURATION_SECONDS,
+} from "@/context/GameContext";
 import { GameTabs } from "@/components/GameTabs";
 import { ThemePicker } from "@/components/ThemePicker";
 import { Button } from "@/components/ui/button";
@@ -137,10 +141,7 @@ export default function Game() {
                         onClick={() =>
                           !Boolean(userPick) &&
                           !isRoundOver &&
-                          pickNumber(
-                            gameState.currentRound.id,
-                            currentNumber!,
-                          )
+                          pickNumber(gameState.currentRound.id, currentNumber!)
                         }
                       >
                         <span
@@ -231,9 +232,16 @@ export default function Game() {
 
               <div className="w-full">
                 {isRoundOver ? (
-                  <Progress value={Math.max(0, Math.min(100, timeLeftBetweenRoundsProgress))} />
+                  <Progress
+                    value={Math.max(
+                      0,
+                      Math.min(100, timeLeftBetweenRoundsProgress),
+                    )}
+                  />
                 ) : (
-                  <Progress value={Math.max(0, Math.min(100, timeLeftProgress))} />
+                  <Progress
+                    value={Math.max(0, Math.min(100, timeLeftProgress))}
+                  />
                 )}
               </div>
             </div>

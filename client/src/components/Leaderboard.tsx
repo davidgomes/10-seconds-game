@@ -1,6 +1,6 @@
 import React from "react";
 import { useGame } from "../context/GameContext";
-import { Player } from '../../../shared/schema';
+import { Player } from "../../../shared/schema";
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 
 export function Leaderboard() {
   const { gameState } = useGame();
-  
+
   if (!gameState) {
     return null;
   }
@@ -58,9 +58,9 @@ export function Leaderboard() {
                 <TableCell>{player.wins}</TableCell>
                 <TableCell>{player.roundsPlayed}</TableCell>
                 <TableCell>
-                  {player.roundsPlayed > 0 
+                  {player.roundsPlayed > 0
                     ? `${((player.wins / player.roundsPlayed) * 100).toFixed(1)}%`
-                    : '0%'}
+                    : "0%"}
                 </TableCell>
                 <TableCell>
                   <Badge variant={player.connected ? "default" : "secondary"}>
