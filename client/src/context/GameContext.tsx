@@ -4,8 +4,9 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useMemo,
 } from "react";
-import { GameState } from "@/lib/gameTypes";
+import { GameState, Player, RoundState } from "@/lib/gameTypes";
 import { useToast } from "@/hooks/use-toast";
 import {
   getUsername,
@@ -13,7 +14,7 @@ import {
   logout as logoutApi,
 } from "@/lib/userApi";
 import { useLoading } from "./LoadingContext";
-import { usePGlite } from "@electric-sql/pglite-react";
+import { usePGlite, useLiveQuery } from "@electric-sql/pglite-react";
 import { useShape } from "@electric-sql/react";
 
 // Constants for timing
@@ -28,49 +29,39 @@ interface GameContextType {
   logout: () => void;
   pickNumber: (roundId: number, number: number) => void;
   userWins: number;
-  hasPicked: boolean;
   userPick: number | null;
   timeLeft: number;
   timeLeftBetweenRounds: number;
   showConfetti: boolean;
+  currentNumber: number | null;
+  roundStatus: string;
+  didUserWin: boolean;
+  isRoundOver: boolean;
+  winningNumber: number | null;
+  timeLeftProgress: number;
+  timeLeftBetweenRoundsProgress: number;
 }
-
-const initialGameState: GameState = {
-  currentRound: {
-    id: 0,
-    active: false,
-    startTime: new Date(),
-    endTime: null,
-    displayedNumbers: [],
-    winner: null,
-    winningNumber: null,
-  },
-  players: [],
-};
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
-  const [userWins, setUserWins] = useState(0);
-  const [hasPicked, setHasPicked] = useState(false);
-  const [userPick, setUserPick] = useState<number | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [timeLeft, setTimeLeft] = useState(ROUND_DURATION_SECONDS);
   const [timeLeftBetweenRounds, setTimeLeftBetweenRounds] = useState(
     BETWEEN_ROUNDS_DURATION_SECONDS,
   );
-  const [showConfetti, setShowConfetti] = useState(false);
 
   const { toast } = useToast();
   const { setLoading } = useLoading();
-
   const db = usePGlite();
 
+  // Fetch all necessary data from PGLite
   const { data: users } = useShape<{
     id: number;
     username: string;
+    participating: boolean;
   }>({
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
@@ -80,23 +71,140 @@ export function GameProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const players = users?.map((user) => ({
-    id: user.id,
-    username: user.username,
-    wins: 0,
-    roundsPlayed: 0,
-    connected: false,
-    participating: false,
-  }));
+  const { data: roundNumbers } = useShape<{
+    displayIndex: number;
+    number: number;
+    round_id: number;
+  }>({
+    url: `https://api.electric-sql.cloud/v1/shape`,
+    params: {
+      table: `round_numbers`,
+      source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
+      source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
+    },
+  });
 
+  const { data: rounds } = useShape<{
+    id: number;
+    start_time: string;
+    winner_user_id: number | null;
+    winning_number: number | null;
+    end_time: string | null;
+  }>({
+    url: `https://api.electric-sql.cloud/v1/shape`,
+    params: {
+      table: `rounds`,
+      source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
+      source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
+    },
+  });
+
+  // Get current round
+  const currentRound = useMemo(() => 
+    rounds?.sort(
+      (a, b) =>
+        new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
+    )[0],
+    [rounds]
+  );
+
+  // Get current round numbers
+  const currentRoundNumbers = useMemo(() => 
+    roundNumbers
+      ?.filter((item) => item.round_id === currentRound?.id)
+      .sort((a, b) => a.displayIndex - b.displayIndex),
+    [roundNumbers, currentRound?.id]
+  );
+
+  // Get current player
+  const currentPlayer = useMemo(() => 
+    users?.find((user) => user.username === username),
+    [users, username]
+  );
+
+  // Get user's pick for current round
+  const userPickResult = useLiveQuery<{ number: number }>(
+    `SELECT number FROM picks WHERE user_id = $1 AND round_id = $2`,
+    [currentPlayer?.id ?? null, currentRound?.id ?? null],
+  );
+
+  // Compute game state from PGLite data
+  const gameState = useMemo<GameState | null>(() => {
+    if (!currentRound || !users) return null;
+
+    const players: Player[] = users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      wins: 0, // Default to 0 since we don't have stats table
+      roundsPlayed: 0, // Default to 0 since we don't have stats table
+      connected: user.username === username,
+      participating: true, // Default to true since we don't have this field
+    }));
+
+    // Convert UTC database timestamps to local Date objects
+    const startTime = new Date(currentRound.start_time + 'Z'); // Append Z to treat as UTC
+    const endTime = currentRound.end_time ? new Date(currentRound.end_time + 'Z') : null;
+
+    const roundState: RoundState = {
+      id: currentRound.id,
+      active: currentRound.end_time === null,
+      winner: currentRound.winner_user_id
+        ? users.find((user) => user.id === currentRound.winner_user_id)?.username || null
+        : null,
+      winningNumber: currentRound.winning_number,
+      startTime,
+      endTime,
+      displayedNumbers: currentRoundNumbers?.map((item) => item.number) || [],
+    };
+
+    return {
+      currentRound: roundState,
+      players,
+    };
+  }, [currentRound, currentRoundNumbers, users, username]);
+
+  // Update timers
   useEffect(() => {
-    if (players) {
-      setGameState((prev) => ({
-        ...prev,
-        players,
-      }));
+    if (!gameState?.currentRound) return;
+
+    const updateTimers = () => {
+      const now = Date.now();
+      
+      if (gameState.currentRound.active) {
+        // During active round
+        const startTime = gameState.currentRound.startTime.getTime();
+        const elapsed = now - startTime;
+        const remaining = Math.max(0, ROUND_DURATION_SECONDS * 1000 - elapsed);
+        setTimeLeft(remaining / 1000);
+      } else if (gameState.currentRound.endTime) {
+        // Between rounds
+        const endTime = gameState.currentRound.endTime.getTime();
+        const elapsedSinceEnd = now - endTime;
+        const remainingBetweenRounds = Math.max(
+          0,
+          BETWEEN_ROUNDS_DURATION_SECONDS * 1000 - elapsedSinceEnd,
+        );
+        setTimeLeftBetweenRounds(remainingBetweenRounds / 1000);
+      }
+    };
+
+    const timer = setInterval(updateTimers, 100);
+    updateTimers(); // Run immediately to avoid delay
+
+    return () => clearInterval(timer);
+  }, [gameState?.currentRound]);
+
+  // Show confetti when user wins
+  useEffect(() => {
+    if (
+      gameState?.currentRound &&
+      !gameState.currentRound.active &&
+      gameState.currentRound.winner === username
+    ) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
     }
-  }, [users]);
+  }, [gameState?.currentRound, username]);
 
   // Check if user is already logged in from cookie
   useEffect(() => {
@@ -108,119 +216,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
           setUsername(response.username);
           setIsLoggedIn(true);
           setLoading(false);
-
-          // Update user stats if available
-          if (response.userId) {
-            const player = {
-              id: response.userId,
-              username: response.username,
-              wins: response.wins || 0,
-              roundsPlayed: response.roundsPlayed || 0,
-              connected: true,
-              participating: true,
-            };
-
-            setGameState((prev) => ({
-              ...prev,
-              players: [...(prev.players || []), player],
-            }));
-          }
         } else {
-          // If no username is found, ensure we're in a logged out state
           setIsLoggedIn(false);
           setUsername("");
-          setLoading(false); // Set loading to false since we're going to Login
+          setLoading(false);
         }
       } catch (error) {
         console.error("Error checking stored username:", error);
-        // In case of an error, ensure we're in a logged out state
         setIsLoggedIn(false);
         setUsername("");
-        setLoading(false); // Set loading to false since we're going to Login
+        setLoading(false);
       }
     };
 
     checkStoredUsername();
   }, []);
-
-  // Update user-specific state when gameState changes
-  useEffect(() => {
-    const updateUserState = async () => {
-      if (isLoggedIn && gameState) {
-        // Find the user in the players list
-        const player = gameState.players.find((p) => p.username === username);
-
-        if (player) {
-          setUserWins(player.wins);
-        }
-
-        if (!player) {
-          throw new Error("Player not found");
-        }
-
-        // Check if the user has picked in the current round
-        const userPick = await db.sql<{
-          id: number;
-          user_id: number;
-          round_id: number;
-          number: number;
-          timestamp: Date;
-        }>`SELECT * FROM picks WHERE user_id = ${player.id} AND round_id = ${gameState.currentRound.id}`;
-        if (userPick.rows.length > 1) {
-          throw new Error(
-            "Multiple picks found for the same user in the same round",
-          );
-        }
-
-        if (userPick.rows.length > 0) {
-          setHasPicked(true);
-          setUserPick(userPick.rows[0].number);
-        } else {
-          setHasPicked(false);
-          setUserPick(null);
-        }
-      }
-    };
-
-    updateUserState();
-  }, [gameState, isLoggedIn, username]);
-
-  // Timer logic
-  useEffect(() => {
-    const updateTimers = () => {
-      if (gameState?.currentRound.active) {
-        // Active round timer logic
-        const startTime = new Date(gameState.currentRound.startTime).getTime();
-        const now = Date.now();
-        const elapsed = now - startTime;
-        const remaining = Math.max(0, ROUND_DURATION_SECONDS * 1000 - elapsed);
-        // Use decimal for smoother progress
-        const newTimeLeft = parseFloat((remaining / 1000).toFixed(1));
-        setTimeLeft(newTimeLeft);
-      } else if (gameState?.currentRound.endTime) {
-        // Between rounds timer logic
-        const endTime = new Date(gameState.currentRound.endTime).getTime();
-        const now = Date.now();
-        const elapsedSinceEnd = now - endTime;
-        const remainingBetweenRounds = Math.max(
-          0,
-          BETWEEN_ROUNDS_DURATION_SECONDS * 1000 - elapsedSinceEnd,
-        );
-        // Use decimal for smoother progress
-        const newBetweenRoundsTime = parseFloat(
-          (remainingBetweenRounds / 1000).toFixed(1),
-        );
-        setTimeLeftBetweenRounds(newBetweenRoundsTime);
-      }
-    };
-
-    const timer = setInterval(updateTimers, 100);
-
-    // Update immediately when component mounts or dependencies change
-    updateTimers();
-
-    return () => clearInterval(timer);
-  }, [gameState]);
 
   // Login function
   const login = async (newUsername: string) => {
@@ -234,9 +244,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Store username in cookie
       await setUsernameApi(newUsername);
-
       setUsername(newUsername);
       setIsLoggedIn(true);
     } catch (error) {
@@ -253,16 +261,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await logoutApi();
-
       setIsLoggedIn(false);
       setUsername("");
-
-      // Reset user state
-      setUserWins(0);
-      setHasPicked(false);
-      setUserPick(null);
-
-      // Reload page to completely reset state
       window.location.reload();
     } catch (error) {
       console.error("Error during logout:", error);
@@ -276,22 +276,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Pick number function
   const pickNumber = async (roundId: number, number: number) => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !currentPlayer) {
       toast({
         title: "Error",
         description: "You must be logged in to pick a number",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const currentPlayer = gameState?.players.find(
-      (p) => p.username === username,
-    );
-    if (!currentPlayer) {
-      toast({
-        title: "Error",
-        description: "Could not find your player information",
         variant: "destructive",
       });
       return;
@@ -305,26 +293,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
           round_id,
           number,
           timestamp
-      )
-      VALUES (
-        gen_random_uuid(),
-        ${currentPlayer.id},
-        ${roundId},
-        ${number},
-        NOW()
-      )
-    `,
+        )
+        VALUES (
+          gen_random_uuid(),
+          ${currentPlayer.id},
+          ${roundId},
+          ${number},
+          NOW()
+        )`,
       );
-
-      console.log(`picked number ${number} for round ${roundId}`);
-
-      setHasPicked(true);
-      setUserPick(number);
     } catch (error) {
-      // Handle the error from the server
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      console.log("errorMessage", errorMessage);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       if (errorMessage.includes("last available number")) {
         toast({
           title: "Error",
@@ -347,6 +326,56 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Compute progress values
+  const timeLeftProgress = useMemo(() => {
+    if (!gameState?.currentRound?.active) return 0;
+    // Original calculation for round progress (starts full, counts down)
+    return Math.min(100, (timeLeft / ROUND_DURATION_SECONDS) * 100);
+  }, [timeLeft, gameState?.currentRound?.active]);
+
+  const timeLeftBetweenRoundsProgress = useMemo(() => {
+    if (gameState?.currentRound?.active) return 0;
+    // Inverted calculation for between-rounds progress (starts empty, fills up)
+    return Math.min(100, ((BETWEEN_ROUNDS_DURATION_SECONDS - timeLeftBetweenRounds) / BETWEEN_ROUNDS_DURATION_SECONDS) * 100);
+  }, [timeLeftBetweenRounds, gameState?.currentRound?.active]);
+  console.log("time left", { timeLeft, timeLeftProgress })
+  // Compute derived values
+  const userWins = useMemo(() => {
+    if (!gameState || !username) return 0;
+    const player = gameState.players.find((p) => p.username === username);
+    return player?.wins ?? 0;
+  }, [gameState, username]);
+
+  const userPick = useMemo(() => {
+    if (!userPickResult?.rows[0]) return null;
+    return userPickResult.rows[0].number;
+  }, [userPickResult]);
+
+  const currentNumber = useMemo(() => {
+    if (!currentRoundNumbers?.length) return null;
+    return currentRoundNumbers[currentRoundNumbers.length - 1].number;
+  }, [currentRoundNumbers]);
+
+  const roundStatus = useMemo(() => {
+    if (!gameState?.currentRound) return "Waiting for round to start";
+    return gameState.currentRound.active ? "Picking phase" : "Round ended";
+  }, [gameState?.currentRound]);
+
+  const didUserWin = useMemo(() => {
+    if (!gameState?.currentRound || !username) return false;
+    return !gameState.currentRound.active && gameState.currentRound.winner === username;
+  }, [gameState?.currentRound, username]);
+
+  const isRoundOver = useMemo(() => {
+    if (!gameState?.currentRound) return false;
+    return !gameState.currentRound.active;
+  }, [gameState?.currentRound]);
+
+  const winningNumber = useMemo(() => {
+    if (!gameState?.currentRound) return null;
+    return gameState.currentRound.winningNumber;
+  }, [gameState?.currentRound]);
+
   return (
     <GameContext.Provider
       value={{
@@ -357,11 +386,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
         logout,
         pickNumber,
         userWins,
-        hasPicked,
         userPick,
         timeLeft,
         timeLeftBetweenRounds,
         showConfetti,
+        currentNumber,
+        roundStatus,
+        didUserWin,
+        isRoundOver,
+        winningNumber,
+        timeLeftProgress,
+        timeLeftBetweenRoundsProgress,
       }}
     >
       {children}

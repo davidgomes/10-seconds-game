@@ -64,11 +64,6 @@ export interface RoundState {
   winningNumber: number | null;
 }
 
-export interface UserPick {
-  username: string;
-  number: number;
-}
-
 export interface Player {
   id: number;
   username: string;
@@ -81,10 +76,4 @@ export interface Player {
 export interface GameState {
   currentRound: RoundState;
   players: Player[];
-}
-
-export interface RoundNumber {
-  roundId: number;
-  number: number;
-  displayIndex: number;
 }
