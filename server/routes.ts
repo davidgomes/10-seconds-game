@@ -237,6 +237,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.getUserByUsername(username);
       if (!user) {
         user = await storage.createUser({ username });
+      } else {
+        // Update connected status to true when fetching user
+        await storage.updateUser(user.id, { connected: true });
       }
 
       // Get user stats
@@ -255,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Set username
-  app.post("/api/username", (req, res) => {
+  app.post("/api/username", async (req, res) => {
     try {
       const { username } = req.body;
 
@@ -263,9 +266,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Username is required" });
       }
 
+      // Check if user exists, otherwise create
+      let user = await storage.getUserByUsername(username);
+      if (!user) {
+        user = await storage.createUser({ username });
+      } else {
+        // Update connected status to true when user logs in
+        await storage.updateUser(user.id, { connected: true });
+      }
+
+      // Get user stats
+      const stats = await storage.getPlayerStats(user.id);
+
       setUsernameCookie(res, username);
 
-      res.json({ username });
+      res.json({
+        username: user.username,
+        userId: user.id,
+        wins: stats.wins,
+        roundsPlayed: stats.roundsPlayed,
+      });
     } catch (error) {
       console.error("Error setting username:", error);
       res.status(500).json({ error: "Failed to set username" });
@@ -273,13 +293,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clear username (logout)
-  app.post("/api/logout", (req, res) => {
+  app.post("/api/logout", async (req, res) => {
     try {
+      const username = getUsernameFromCookie(req);
+      if (username) {
+        const user = await storage.getUserByUsername(username);
+        if (user) {
+          // Set connected to false when logging out
+          await storage.updateUser(user.id, { connected: false });
+        }
+      }
+
       clearUsernameCookie(res);
       res.json({ success: true });
     } catch (error) {
       console.error("Error logging out:", error);
       res.status(500).json({ error: "Failed to logout" });
+    }
+  });
+
+  // Disconnect user
+  app.post("/api/disconnect", async (req, res) => {
+    try {
+      const username = getUsernameFromCookie(req);
+      if (!username) {
+        return res.status(400).json({ error: "No username found" });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      await storage.updateUser(user.id, { connected: false });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error disconnecting user:", error);
+      res.status(500).json({ error: "Failed to disconnect" });
     }
   });
 

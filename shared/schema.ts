@@ -13,6 +13,7 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
+  connected: boolean("connected").notNull().default(false),
 });
 
 export const rounds = pgTable("rounds", {
@@ -70,10 +71,15 @@ export interface Player {
   wins: number;
   roundsPlayed: number;
   connected: boolean;
-  participating: boolean;
 }
 
 export interface GameState {
   currentRound: RoundState;
   players: Player[];
+}
+
+export interface RoundNumber {
+  roundId: number;
+  number: number;
+  displayIndex: number;
 }

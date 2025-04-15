@@ -57,11 +57,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const { setLoading } = useLoading();
   const db = usePGlite();
 
-  // Fetch all necessary data from PGLite
+  // Get all users with their connection status
   const { data: users } = useShape<{
     id: number;
     username: string;
-    participating: boolean;
+    connected: boolean;
   }>({
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
@@ -70,6 +70,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
     },
   });
+
+  console.log("users shape result:", users);
+  const userRows = users ?? [];
+  console.log("userRows:", userRows);
 
   const { data: roundNumbers } = useShape<{
     displayIndex: number;
@@ -84,16 +88,30 @@ export function GameProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Get all rounds to compute stats
   const { data: rounds } = useShape<{
     id: number;
-    start_time: string;
     winner_user_id: number | null;
-    winning_number: number | null;
+    start_time: string;
     end_time: string | null;
+    winning_number: number | null;
   }>({
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
       table: `rounds`,
+      source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
+      source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
+    },
+  });
+
+  // Get all picks to compute stats
+  const { data: picks } = useShape<{
+    user_id: number;
+    round_id: number;
+  }>({
+    url: `https://api.electric-sql.cloud/v1/shape`,
+    params: {
+      table: `picks`,
       source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
       source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
     },
@@ -117,10 +135,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   );
 
   // Get current player
-  const currentPlayer = useMemo(() => 
-    users?.find((user) => user.username === username),
-    [users, username]
-  );
+  const currentPlayer = useMemo(() => {
+    console.log("Finding current player for username:", username);
+    const player = userRows?.find((user) => user.username === username);
+    console.log("Found current player:", player);
+    return player;
+  }, [userRows, username]);
 
   // Get user's pick for current round
   const userPickResult = useLiveQuery<{ number: number }>(
@@ -130,16 +150,26 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Compute game state from PGLite data
   const gameState = useMemo<GameState | null>(() => {
-    if (!currentRound || !users) return null;
+    if (!currentRound || !users?.length) return null;
 
-    const players: Player[] = users.map((user) => ({
-      id: user.id,
-      username: user.username,
-      wins: 0, // Default to 0 since we don't have stats table
-      roundsPlayed: 0, // Default to 0 since we don't have stats table
-      connected: user.username === username,
-      participating: true, // Default to true since we don't have this field
-    }));
+    // Compute stats for each user
+    const players: Player[] = users.map((user) => {
+      // Count wins
+      const wins = rounds?.filter(round => round.winner_user_id === user.id).length ?? 0;
+      
+      // Count unique rounds played
+      const roundsPlayed = new Set(
+        picks?.filter(pick => pick.user_id === user.id).map(pick => pick.round_id)
+      ).size;
+
+      return {
+        id: user.id,
+        username: user.username,
+        wins,
+        roundsPlayed,
+        connected: user.connected,
+      };
+    });
 
     // Convert UTC database timestamps to local Date objects
     const startTime = new Date(currentRound.start_time + 'Z'); // Append Z to treat as UTC
@@ -161,7 +191,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       currentRound: roundState,
       players,
     };
-  }, [currentRound, currentRoundNumbers, users, username]);
+  }, [currentRound, currentRoundNumbers, users, rounds, picks]);
 
   // Update timers
   useEffect(() => {
@@ -210,13 +240,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkStoredUsername = async () => {
       try {
+        console.log("Checking stored username...");
         const response = await getUsername();
+        console.log("getUsername response:", response);
 
         if (response?.username) {
+          console.log("Found stored username:", response.username);
           setUsername(response.username);
           setIsLoggedIn(true);
           setLoading(false);
         } else {
+          console.log("No stored username found");
           setIsLoggedIn(false);
           setUsername("");
           setLoading(false);
@@ -233,33 +267,51 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Login function
-  const login = async (newUsername: string) => {
-    if (!newUsername.trim()) {
-      toast({
-        title: "Error",
-        description: "Username cannot be empty",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const login = async (username: string) => {
     try {
-      await setUsernameApi(newUsername);
-      setUsername(newUsername);
-      setIsLoggedIn(true);
-    } catch (error) {
-      console.error("Error setting username cookie:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save username",
-        variant: "destructive",
+      const response = await fetch("/api/username", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username }),
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to set username");
+      }
+
+      const data = await response.json();
+      console.log("Login response:", data);
+
+      // Wait a moment for the user to be created in the database
+      // This gives time for the shape subscription to pick up the new user
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setUsername(data.username);
+      setIsLoggedIn(true);
+      setLoading(false);
+
+      return data;
+    } catch (error) {
+      console.error("Error logging in:", error);
+      throw error;
     }
   };
 
   // Logout function
   const logout = async () => {
     try {
+      if (currentPlayer) {
+        // Call disconnect endpoint before logging out
+        await fetch("/api/disconnect", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      }
+
       await logoutApi();
       setIsLoggedIn(false);
       setUsername("");
@@ -376,6 +428,30 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!gameState?.currentRound) return null;
     return gameState.currentRound.winningNumber;
   }, [gameState?.currentRound]);
+
+  // Remove the useEffect for updating connected status since it's now in login
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      if (currentPlayer) {
+        try {
+          // Call disconnect endpoint instead of writing to PGLite
+          await fetch("/api/disconnect", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+        } catch (error) {
+          console.error("Error disconnecting:", error);
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [currentPlayer]);
 
   return (
     <GameContext.Provider
