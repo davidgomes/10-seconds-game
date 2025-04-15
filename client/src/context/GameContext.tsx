@@ -338,7 +338,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     // Inverted calculation for between-rounds progress (starts empty, fills up)
     return Math.min(100, ((BETWEEN_ROUNDS_DURATION_SECONDS - timeLeftBetweenRounds) / BETWEEN_ROUNDS_DURATION_SECONDS) * 100);
   }, [timeLeftBetweenRounds, gameState?.currentRound?.active]);
-  console.log("time left", { timeLeft, timeLeftProgress })
   // Compute derived values
   const userWins = useMemo(() => {
     if (!gameState || !username) return 0;
