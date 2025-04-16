@@ -8,10 +8,10 @@ interface NumberCardProps {
 }
 
 export function NumberCard({ number, disabled = false }: NumberCardProps) {
-  const { gameState, pickNumber, hasPicked } = useGame();
+  const { gameState, pickNumber } = useGame();
 
   const handleClick = () => {
-    if (disabled || hasPicked || !gameState) return;
+    if (disabled || !gameState) return;
     pickNumber(gameState.currentRound.id, number);
   };
 
@@ -19,7 +19,7 @@ export function NumberCard({ number, disabled = false }: NumberCardProps) {
     <div
       className={cn(
         "w-full max-w-[120px] aspect-square rounded-xl shadow-md flex items-center justify-center transition-all duration-200",
-        disabled || hasPicked
+        disabled || !gameState
           ? "bg-gray-100 cursor-not-allowed opacity-70"
           : "bg-gray-50 cursor-pointer hover:bg-[hsl(var(--secondary))] hover:text-white hover:-translate-y-1 hover:shadow-lg",
         "animate-in slide-in-from-bottom duration-300",
