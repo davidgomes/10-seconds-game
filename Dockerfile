@@ -24,11 +24,12 @@ RUN apt-get update -qq && \
 COPY bun.lock package.json ./
 RUN bun install
 
-# Copy application code
+# Copy application code and env file
 COPY . .
+COPY .env .env
 
-# Build application
-RUN bun --bun run build
+# Build application with env variables
+RUN bun --bun --env-file .env run build
 
 # Remove development dependencies
 RUN rm -rf node_modules && \
@@ -38,9 +39,10 @@ RUN rm -rf node_modules && \
 # Final stage for app image
 FROM base
 
-# Copy built application
+# Copy built application and env file
 COPY --from=build /app /app
+COPY --from=build /app/.env .env
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
-CMD [ "bun", "run", "start" ]
+CMD [ "bun", "--env-file", ".env", "run", "start" ]
