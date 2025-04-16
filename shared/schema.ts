@@ -20,8 +20,13 @@ export const rounds = pgTable("rounds", {
   id: serial("id").primaryKey(),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time"),
-  winnerUserId: integer("winner_user_id").references(() => users.id),
   winningNumber: integer("winning_number"),
+});
+
+export const roundWinners = pgTable("round_winners", {
+  id: serial("id").primaryKey(),
+  roundId: integer("round_id").references(() => rounds.id),
+  userId: integer("user_id").references(() => users.id),
 });
 
 export const roundNumbers = pgTable("round_numbers", {
@@ -61,7 +66,7 @@ export interface RoundState {
   startTime: Date;
   endTime: Date | null;
   displayedNumbers: number[];
-  winner: string | null;
+  winners: string[];
   winningNumber: number | null;
 }
 

@@ -89,7 +89,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Get all rounds to compute stats
   const { data: rounds } = useShape<{
     id: number;
-    winner_user_id: number | null;
     start_time: string;
     end_time: string | null;
     winning_number: number | null;
@@ -97,6 +96,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
       table: `rounds`,
+      source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
+      source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
+    },
+  });
+
+  // Get round winners
+  const { data: roundWinners } = useShape<{
+    round_id: number;
+    user_id: number;
+  }>({
+    url: `https://api.electric-sql.cloud/v1/shape`,
+    params: {
+      table: `round_winners`,
       source_id: import.meta.env.VITE_ELECTRIC_SOURCE_ID,
       source_secret: import.meta.env.VITE_ELECTRIC_SOURCE_SECRET,
     },
@@ -154,9 +166,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     // Compute stats for each user
     const players: Player[] = users.map((user) => {
-      // Count wins
-      const wins =
-        rounds?.filter((round) => round.winner_user_id === user.id).length ?? 0;
+      // Count wins from round_winners table
+      const wins = roundWinners?.filter(
+        (winner) => winner.user_id === user.id
+      ).length ?? 0;
 
       // Count unique rounds played
       const roundsPlayed = new Set(
@@ -180,13 +193,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
       ? new Date(currentRound.end_time + "Z")
       : null;
 
+    // Get winners for current round
+    const currentRoundWinners = roundWinners
+      ?.filter((winner) => winner.round_id === currentRound.id)
+      .map((winner) => {
+        const user = users.find((u) => u.id === winner.user_id);
+        return user?.username || "";
+      })
+      .filter(Boolean) || [];
+
     const roundState: RoundState = {
       id: currentRound.id,
       active: currentRound.end_time === null,
-      winner: currentRound.winner_user_id
-        ? users.find((user) => user.id === currentRound.winner_user_id)
-            ?.username || null
-        : null,
+      winners: currentRoundWinners,
       winningNumber: currentRound.winning_number,
       startTime,
       endTime,
@@ -197,7 +216,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       currentRound: roundState,
       players,
     };
-  }, [currentRound, currentRoundNumbers, users, rounds, picks]);
+  }, [currentRound, currentRoundNumbers, users, rounds, picks, roundWinners]);
 
   // Update timers
   useEffect(() => {
@@ -235,7 +254,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (
       gameState?.currentRound &&
       !gameState.currentRound.active &&
-      gameState.currentRound.winner === username
+      gameState.currentRound.winners.includes(username)
     ) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 5000);
@@ -430,7 +449,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!gameState?.currentRound || !username) return false;
     return (
       !gameState.currentRound.active &&
-      gameState.currentRound.winner === username
+      gameState.currentRound.winners.includes(username)
     );
   }, [gameState?.currentRound, username]);
 

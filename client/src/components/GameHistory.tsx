@@ -6,9 +6,9 @@ import { useShape } from "@electric-sql/react";
 interface Round {
   id: number;
   start_time: string;
-  winner_user_id: number | null;
   winning_number: number | null;
   end_time: string | null;
+  winners: string[];
 }
 
 interface Pick {
@@ -45,9 +45,9 @@ export function GameHistory() {
   const { data: rounds } = useShape<{
     id: number;
     start_time: string;
-    winner_user_id: number | null;
     winning_number: number | null;
     end_time: string | null;
+    winners: string[];
   }>({
     url: `https://api.electric-sql.cloud/v1/shape`,
     params: {
@@ -76,7 +76,7 @@ export function GameHistory() {
   // Filter out rounds without any players and sort by start time (most recent first)
   const roundsWithPlayers =
     rounds
-      ?.filter((round) => round.winner_user_id !== null)
+      ?.filter((round) => round.winners.length > 0)
       .sort(
         (a, b) =>
           new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
@@ -98,10 +98,10 @@ export function GameHistory() {
             </div>
             <div className="p-4">
               <div className="mb-2">
-                <span className="font-medium text-primary">Winner:</span>{" "}
-                {round.winner_user_id
-                  ? `${userMap.get(round.winner_user_id) || `User ${round.winner_user_id}`} with ${round.winning_number}`
-                  : "No winner"}
+                <span className="font-medium text-primary">Winners:</span>{" "}
+                {round.winners.length > 0
+                  ? `${round.winners.join(", ")} with ${round.winning_number}`
+                  : "No winners"}
               </div>
             </div>
           </div>
