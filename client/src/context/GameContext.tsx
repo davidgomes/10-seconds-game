@@ -71,9 +71,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  console.log("users shape result:", users);
   const userRows = users ?? [];
-  console.log("userRows:", userRows);
 
   const { data: roundNumbers } = useShape<{
     displayIndex: number;
