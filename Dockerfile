@@ -12,6 +12,9 @@ WORKDIR /app
 # Set production environment
 ENV NODE_ENV="production"
 
+# Define build arguments for Electric SQL
+ARG VITE_ELECTRIC_SOURCE_ID
+ARG VITE_ELECTRIC_SOURCE_SECRET
 
 # Throw-away build stage to reduce size of final image
 FROM base AS build
@@ -26,6 +29,10 @@ RUN bun install
 
 # Copy application code
 COPY . .
+
+# Set environment variables for the build
+ENV VITE_ELECTRIC_SOURCE_ID=${VITE_ELECTRIC_SOURCE_ID}
+ENV VITE_ELECTRIC_SOURCE_SECRET=${VITE_ELECTRIC_SOURCE_SECRET}
 
 # Build application
 RUN bun --bun run build
