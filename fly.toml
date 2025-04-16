@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for tensecondchallenge-weathered-tree-7646 on 2025-04-13T17:54:29+02:00
+# fly.toml app configuration file generated for tensecondchallenge-white-morning-4012 on 2025-04-16T13:51:32-04:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'tensecondchallenge'
-primary_region = 'mad'
+app = 'tensecondchallenge-white-morning-4012'
+primary_region = 'mia'
 
 [build]
 
