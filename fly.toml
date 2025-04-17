@@ -4,7 +4,7 @@
 #
 
 app = 'tensecondchallenge-weathered-tree-7646'
-primary_region = 'mad'
+primary_region = 'mia'
 
 [build]
 
