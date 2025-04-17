@@ -43,6 +43,7 @@ export class GameManager {
       const round = await storage.createRound({
         startTime,
         endTime: null,
+        winnerUserId: null,
         winningNumber: null,
       });
 
@@ -53,7 +54,7 @@ export class GameManager {
         startTime,
         endTime: null,
         displayedNumbers: [],
-        winners: [],
+        winner: null,
         winningNumber: null,
       };
 
@@ -129,39 +130,33 @@ export class GameManager {
     this.currentRound.endTime = new Date();
 
     try {
-      // Determine the winners from the database
+      // Determine the winner from the database
       const picks = await storage.getPicksByRound(this.currentRound.id);
       if (picks.length > 0) {
         // Sort picks by number (descending)
         const sortedPicks = [...picks].sort((a, b) => b.number - a.number);
-        const winningNumber = sortedPicks[0].number;
-        
-        // Find all picks with the winning number
-        const winningPicks = sortedPicks.filter(pick => pick.number === winningNumber);
-        const winners: string[] = [];
+        const winningPick = sortedPicks[0];
 
-        // Get usernames for all winners
-        for (const pick of winningPicks) {
-          const user = await storage.getUser(pick.userId);
-          if (user) {
-            winners.push(user.username);
-            // Add winner to round_winners table
-            await storage.addRoundWinner(this.currentRound.id, user.id);
-          }
+        console.log("winningPick", winningPick);
+        const user = await storage.getUser(winningPick.userId);
+
+        if (!user) {
+          throw new Error("User not found for pick");
         }
 
-        this.currentRound.winners = winners;
-        this.currentRound.winningNumber = winningNumber;
+        this.currentRound.winner = user.username;
+        this.currentRound.winningNumber = winningPick.number;
 
         // Update the round in storage
         await storage.updateRound(this.currentRound.id, {
           endTime: this.currentRound.endTime,
-          winningNumber: winningNumber,
+          winnerUserId: user.id,
+          winningNumber: winningPick.number,
         });
 
-        // Log the winners for debugging
+        // Log the winner for debugging
         console.log(
-          `Round ${this.currentRound.id} won by ${winners.join(", ")} with number ${winningNumber}`,
+          `Round ${this.currentRound.id} won by ${user.username} (ID: ${user.id}) with number ${winningPick.number}`,
         );
       } else {
         // No picks in this round

@@ -11,7 +11,6 @@ import {
   insertRoundSchema,
   insertPickSchema,
   RoundNumber,
-  roundWinners,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -52,9 +51,6 @@ export interface IStorage {
     userId: number,
   ): Promise<{ wins: number; roundsPlayed: number }>;
   getLeaderboard(): Promise<Player[]>;
-
-  // New method
-  addRoundWinner(roundId: number, userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -209,11 +205,11 @@ export class DatabaseStorage implements IStorage {
       .from(picks)
       .where(eq(picks.userId, userId));
 
-    // Count rounds won by the user from round_winners table
+    // Count rounds won by the user - only count rounds where this user is the winner
     const userWins = await db
       .select()
-      .from(roundWinners)
-      .where(eq(roundWinners.userId, userId));
+      .from(rounds)
+      .where(eq(rounds.winnerUserId, userId));
 
     // Count unique rounds to get the actual rounds played
     const uniqueRounds = new Set(userPicks.map((pick) => pick.roundId));
@@ -237,13 +233,6 @@ export class DatabaseStorage implements IStorage {
       roundsPlayed: stats[index].roundsPlayed,
       connected: user.connected,
     }));
-  }
-
-  async addRoundWinner(roundId: number, userId: number): Promise<void> {
-    await db.insert(roundWinners).values({
-      roundId,
-      userId,
-    });
   }
 }
 

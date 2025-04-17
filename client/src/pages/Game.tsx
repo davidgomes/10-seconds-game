@@ -112,7 +112,7 @@ export default function Game() {
                     "flex-row space-x-8",
                   )}
                 >
-                  {isRoundOver && gameState.currentRound.winners.length === 0 ? (
+                  {isRoundOver && gameState.currentRound.winner === null ? (
                     <div className="flex flex-col items-center">
                       <p className="text-sm text-muted-foreground mb-2">
                         No Winners
@@ -124,7 +124,7 @@ export default function Game() {
                         </span>
                       </div>
                     </div>
-                  ) : (
+                  ) : currentNumber || isRoundOver ? (
                     <div className="flex flex-col items-center">
                       <p className="text-sm text-muted-foreground mb-2">
                         {isRoundOver ? "Winning Number" : "Current Number"}
@@ -162,6 +162,15 @@ export default function Game() {
                         </p>
                       )}
                     </div>
+                  ) : (
+                    <div className="text-center p-8">
+                      <p className="mb-4">
+                        Waiting for the first number to appear...
+                      </p>
+                      <div className="flex justify-center">
+                        <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+                      </div>
+                    </div>
                   )}
 
                   {/* User pick section - always rendered beside the current/winning number */}
@@ -189,14 +198,14 @@ export default function Game() {
             </div>
 
             {/* Winner information instead of all picks */}
-            {isRoundOver && gameState.currentRound.winners.length > 0 && (
+            {isRoundOver && gameState.currentRound.winner && (
               <div className="mt-6 text-center">
                 <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                   <span className="mr-1">🏆</span>
                   <span>
                     Round won by{" "}
                     <span className="font-bold">
-                      {gameState.currentRound.winners.join(", ")}
+                      {gameState.currentRound.winner}
                     </span>
                   </span>
                 </div>
