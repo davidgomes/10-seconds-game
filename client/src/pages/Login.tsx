@@ -25,7 +25,7 @@ export default function Login() {
         <CardContent className="pt-6">
           <div className="flex justify-center mb-6">
             <h2 className="text-3xl font-bold text-primary">
-              10 seconds, 10 numbers, 1 pick
+              Pick The Highest Number
             </h2>
           </div>
 

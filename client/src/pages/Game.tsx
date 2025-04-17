@@ -49,7 +49,7 @@ export default function Game() {
       <header className="mb-6">
         <div className="flex flex-col lg:flex-row justify-between items-center">
           <h1 className="text-3xl md:text-4xl font-bold text-primary text-center lg:text-left mb-4 lg:mb-0">
-            10 seconds, 10 numbers, 1 pick
+            Pick The Highest Number
           </h1>
           <div className="flex items-center space-x-4">
             <div className="bg-card text-card-foreground rounded-lg shadow-md px-4 py-2">
