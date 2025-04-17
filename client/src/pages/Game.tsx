@@ -155,12 +155,6 @@ export default function Game() {
                           {isRoundOver ? winningNumber : currentNumber}
                         </span>
                       </div>
-                      {/* Show different messages based on game state */}
-                      {!Boolean(userPick) && !isRoundOver && (
-                        <p className="mt-3 text-sm">
-                          You must pick the last available number!
-                        </p>
-                      )}
                     </div>
                   ) : (
                     <div className="text-center p-8">
