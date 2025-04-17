@@ -259,7 +259,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 5000);
     }
-  }, [gameState?.currentRound, gameState?.currentRound?.winners, username]);
+  }, [gameState?.currentRound, username]);
 
   // Check if user is already logged in from cookie
   useEffect(() => {
