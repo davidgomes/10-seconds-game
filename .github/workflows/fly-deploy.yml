@@ -13,8 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only --build-arg VITE_ELECTRIC_SOURCE_ID=$VITE_ELECTRIC_SOURCE_ID --build-arg VITE_ELECTRIC_SOURCE_SECRET=$VITE_ELECTRIC_SOURCE_SECRET
+      - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          VITE_ELECTRIC_SOURCE_ID: ${{ secrets.VITE_ELECTRIC_SOURCE_ID }}
-          VITE_ELECTRIC_SOURCE_SECRET: ${{ secrets.VITE_ELECTRIC_SOURCE_SECRET }}
